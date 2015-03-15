@@ -38,7 +38,7 @@ app.start = function () {
   app.drawCtx.fillStyle = "#fff";
   app.drawCtx.fillRect(0, 0, app.map.width, app.map.height);
   
-  app.boid = new window.boid(40);
+  app.boid = new window.boid(30);
   app.boid.setCenter(app.map.width / 2, app.map.height / 2);
   app.boid.setTarget(app.map.width / 2, (app.map.height / 2) - 1);
   app.boid.defineBoid();

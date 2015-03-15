@@ -1,0 +1,39 @@
+@charset "utf-8";
+
+html, body{
+	padding: 0; margin: 0; background-color: #ddd;
+}
+
+#top {
+  top: 0px; width: 100%; height: 50px; position: absolute; text-align: center;
+  display: inline-block; margin: auto; left: 0; right: 0;
+}
+
+#main {
+  left: 0; right: 0; top: 0; bottom: 0; margin: auto; position: absolute;
+  width: calc(100% - 150px); height: calc(100% - 150px); background-color: #000;
+}
+
+#bottom {
+  bottom: 0px; width: 100%; height: 50px; text-align: center; position: absolute;
+}
+
+#webclDeviceSelector {
+  margin-left: 15px;
+}
+
+#upperOptions {
+  padding-top: 10px;
+}
+
+#lowerOptions {
+  
+}
+
+#start {
+  position: absolute; bottom: -15px;
+}
+
+#map {
+  width: 100%; height: 100%;
+}

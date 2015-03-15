@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Audio Demo</title>
+  <meta name="Author" content="Scott Michaud"/>
+  <script src="src/pmeAudio.js"></script>
+  <script src="main.js"></script>
+  <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+  <div id="top">
+    <div id="upperOptions">
+      <input id="typeWebAudio" type="radio" name="apiType" value="webaudio">
+      <label for="webaudio">Direct WebAudio</label>
+      <input id="typeWebCL" type="radio" name="apiType" value="webcl">
+      <label for="webcl">WebCL Offload</label>
+      <select name="webclDevice" id="webclDeviceSelector">
+        <option value="value1">Intel CPU</option>
+      </select>
+    </div>
+    <div id="lowerOptions">
+      <button id="start">
+      Begin
+    </button>
+    </div>
+  </div>
+  <div id="main">
+    <canvas id="map"></canvas>
+  </div>
+  <div id="bottom">
+    <button id="start">
+      Begin
+    </button>
+  </div>
+</body>
+</html>

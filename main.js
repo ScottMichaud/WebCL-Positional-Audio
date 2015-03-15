@@ -10,6 +10,8 @@
 */
 
 var app = window.app || {};
+window.pmAudio = window.pmAudio || {};
+window.pmAudio.clAudioCtx = window.pmAudio.clAudioCtx || {};
 
 app.init = function () {
   "use strict";
@@ -22,6 +24,16 @@ app.init = function () {
 
 app.start = function () {
   "use strict";
+  var i,
+    tempOption;
+  
+  app.clCtx = new window.pmAudio.clAudioCtx();
+  
+  for (i = 0; i < app.clCtx.clDevices.length; i += 1) {
+    tempOption = document.createElement('option');
+    tempOption.textContent = app.clCtx.clDevices[i].name;
+    document.getElementById('webclDeviceSelector').appendChild(tempOption);
+  }
   
   app.drawCtx.fillStyle = "#fff";
   app.drawCtx.fillRect(0, 0, app.map.width, app.map.height);

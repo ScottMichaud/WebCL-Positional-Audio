@@ -25,15 +25,28 @@ app.init = function () {
 app.start = function () {
   "use strict";
   var i,
-    tempOption;
+    tempOption,
+    tempCLSelect;
+  
+  tempCLSelect = document.getElementById('webclDeviceSelector');
   
   app.clCtx = new window.pmAudio.clAudioCtx();
   
-  for (i = 0; i < app.clCtx.clDevices.length; i += 1) {
-    tempOption = document.createElement('option');
-    tempOption.textContent = app.clCtx.clDevices[i].name;
-    document.getElementById('webclDeviceSelector').appendChild(tempOption);
+  //If WebCL is present and lists devices.
+  if (app.clCtx.clDevices) {
+    for (i = 0; i < app.clCtx.clDevices.length; i += 1) {
+      tempOption = document.createElement('option');
+      tempOption.textContent = app.clCtx.clDevices[i].name;
+      tempOption.setAttribute("value", i);
+      tempCLSelect.appendChild(tempOption);
+    }
+  } else {
+    document.getElementById('typeWebCL').setAttribute("disabled", "disabled");
   }
+  
+  //Disable WebCL dropdown by default.
+  tempCLSelect.setAttribute("disabled", "disabled");
+  document.getElementById('typeWebAudio').setAttribute("checked", "checked");
   
   app.drawCtx.fillStyle = "#fff";
   app.drawCtx.fillRect(0, 0, app.map.width, app.map.height);
@@ -55,6 +68,18 @@ app.start = function () {
   app.drawCtx.arc(app.boid.location.x, app.boid.location.y, 4, 0, 2 * Math.PI);
   app.drawCtx.fillStyle = "red";
   app.drawCtx.fill();
+};
+
+app.noOffloadSelected = function () {
+  "use strict";
+  
+  document.getElementById('webclDeviceSelector').setAttribute("disabled", "disabled");
+};
+
+app.webCLOffloadSelected = function () {
+  "use strict";
+  
+  document.getElementById('webclDeviceSelector').removeAttribute("disabled");
 };
 
 window.addEventListener('DOMContentLoaded', app.init, false);

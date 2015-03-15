@@ -5,6 +5,7 @@
   <title>Audio Demo</title>
   <meta name="Author" content="Scott Michaud"/>
   <script src="src/pmeAudio.js"></script>
+  <script src="classes/boid.js"></script>
   <script src="main.js"></script>
   <link rel="stylesheet" type="text/css" href="style.css">
 </head>
@@ -12,7 +13,7 @@
   <div id="top">
     <div id="upperOptions">
       <input id="typeWebAudio" type="radio" name="apiType" value="webaudio">
-      <label for="webaudio">Direct WebAudio</label>
+      <label for="webaudio">No Offloading</label>
       <input id="typeWebCL" type="radio" name="apiType" value="webcl">
       <label for="webcl">WebCL Offload</label>
       <select name="webclDevice" id="webclDeviceSelector">
@@ -23,8 +24,8 @@
     </div>
     <div id="lowerOptions">
       <button id="start">
-      Begin
-    </button>
+        Begin
+      </button>
     </div>
   </div>
   <div id="main">

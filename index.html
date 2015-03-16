@@ -12,9 +12,9 @@
 <body>
   <div id="top">
     <div id="upperOptions">
-      <input id="typeWebAudio" type="radio" name="apiType" value="webaudio" onclick="app.noOffloadSelected();">
+      <input id="typeWebAudio" type="radio" name="apiType" value="webaudio" onclick="app.noOffloadSelected();" autocomplete="off">
       <label for="webaudio">No Offloading</label>
-      <input id="typeWebCL" type="radio" name="apiType" value="webcl" onclick="app.webCLOffloadSelected();">
+      <input id="typeWebCL" type="radio" name="apiType" value="webcl" onclick="app.webCLOffloadSelected();" autocomplete="off">
       <label for="webcl">WebCL Offload</label>
       <select name="webclDevice" id="webclDeviceSelector">
       </select>

@@ -37,18 +37,19 @@ app.start = function () {
     for (i = 0; i < app.clCtx.clDevices.length; i += 1) {
       tempOption = document.createElement('option');
       tempOption.textContent = app.clCtx.clDevices[i].name;
-      tempOption.setAttribute("value", i);
+      tempOption.setAttribute('value', i);
       tempCLSelect.appendChild(tempOption);
     }
   } else {
-    document.getElementById('typeWebCL').setAttribute("disabled", "disabled");
+    document.getElementById('typeWebCL').setAttribute('disabled', 'disabled');
   }
   
   //Disable WebCL dropdown by default.
-  tempCLSelect.setAttribute("disabled", "disabled");
-  document.getElementById('typeWebAudio').setAttribute("checked", "checked");
+  tempCLSelect.setAttribute('disabled', 'disabled');
+  document.getElementById('typeWebCL').removeAttribute('checked');
+  document.getElementById('typeWebAudio').setAttribute('checked', 'checked');
   
-  app.drawCtx.fillStyle = "#fff";
+  app.drawCtx.fillStyle = '#fff';
   app.drawCtx.fillRect(0, 0, app.map.width, app.map.height);
   
   app.boid = new window.boid(30);
@@ -61,25 +62,25 @@ app.start = function () {
   app.drawCtx.lineTo(app.boid.points[2], app.boid.points[3]);
   app.drawCtx.lineTo(app.boid.points[4], app.boid.points[5]);
   app.drawCtx.lineTo(app.boid.points[6], app.boid.points[7]);
-  app.drawCtx.fillStyle = "#000";
+  app.drawCtx.fillStyle = '#000';
   app.drawCtx.fill();
   
   app.drawCtx.beginPath();
   app.drawCtx.arc(app.boid.location.x, app.boid.location.y, 4, 0, 2 * Math.PI);
-  app.drawCtx.fillStyle = "red";
+  app.drawCtx.fillStyle = 'red';
   app.drawCtx.fill();
 };
 
 app.noOffloadSelected = function () {
   "use strict";
   
-  document.getElementById('webclDeviceSelector').setAttribute("disabled", "disabled");
+  document.getElementById('webclDeviceSelector').setAttribute('disabled', 'disabled');
 };
 
 app.webCLOffloadSelected = function () {
   "use strict";
   
-  document.getElementById('webclDeviceSelector').removeAttribute("disabled");
+  document.getElementById('webclDeviceSelector').removeAttribute('disabled');
 };
 
 window.addEventListener('DOMContentLoaded', app.init, false);

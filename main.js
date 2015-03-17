@@ -120,5 +120,24 @@ app.webCLOffloadSelected = function () {
   document.getElementById('webclDeviceSelector').removeAttribute('disabled');
 };
 
+app.draw = function () {
+  "use strict";
+  
+  app.startFrame();
+  app.boid.draw();
+};
+
+app.resize = function () {
+  "use strict";
+  
+  app.map.width = document.getElementById('main').clientWidth;
+  app.map.height = document.getElementById('main').clientHeight;
+  app.boid.setCenter(app.map.width / 2, app.map.height / 2);
+  app.boid.setTarget(app.map.width / 2, (app.map.height / 2) - 1);
+  app.boid.defineBoid();
+  app.draw();
+};
+
 window.addEventListener('DOMContentLoaded', app.init, false);
 window.addEventListener('load', app.start, false);
+window.addEventListener('resize', app.resize, false);

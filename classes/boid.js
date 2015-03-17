@@ -43,6 +43,12 @@
       normalizeFactor,
       rotatedDirection;
     
+    //Handle case where location = target
+    if (this.target.x === this.location.x &&
+        this.target.y === this.location.y) {
+      this.target.y -= 1;
+    }
+    
     direction = {
       x: this.target.x - this.location.x,
       y: this.target.y - this.location.y

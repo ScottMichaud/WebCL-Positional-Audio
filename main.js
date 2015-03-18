@@ -87,16 +87,20 @@ app.startFrame = function () {
 app.canvasLMBDown = function (e) {
   "use strict";
   
-  app.boid.setCenter(app.mouse.x, app.mouse.y);
-  app.boid.bIsOrienting = true;
+  if (e.which === 1) {
+    app.boid.setCenter(app.mouse.x, app.mouse.y);
+    app.boid.bIsOrienting = true;
+  }
 };
 
 app.canvasLMBUp = function (e) {
   "use strict";
   
-  app.boid.setTarget(app.mouse.x, app.mouse.y);
-  app.boid.defineBoid();
-  app.boid.bIsOrienting = false;
+  if (e.which === 1) {
+    app.boid.setTarget(app.mouse.x, app.mouse.y);
+    app.boid.defineBoid();
+    app.boid.bIsOrienting = false;
+  }
 };
 
 app.canvasMouseMove = function (e) {

@@ -17,6 +17,18 @@ app.init = function () {
   "use strict";
   
   app.mouse = {x: 0, y: 0};
+  
+  app.glPoints = document.getElementById('glPoints');
+  app.glPoints.width = document.getElementById('main').clientWidth;
+  app.glPoints.height = document.getElementById('main').clientHeight;
+  try {
+    app.glCtx = app.glPoints.getContext('webgl') || app.glPoints.getContext('experimental-webgl');
+  } catch (e) {}
+  
+  if (!app.glCtx) {
+    window.console.error('Could not acquire a WebGL Context');
+  }
+  
   app.map = document.getElementById('map');
   app.drawCtx = app.map.getContext('2d');
   app.map.width = document.getElementById('main').clientWidth;

@@ -51,9 +51,6 @@ app.start = function () {
   document.getElementById('typeWebCL').removeAttribute('checked');
   document.getElementById('typeWebAudio').setAttribute('checked', 'checked');
   
-  app.drawCtx.fillStyle = '#fff';
-  app.drawCtx.fillRect(0, 0, app.map.width, app.map.height);
-  
   app.boid = new window.boid(30);
   app.boid.setCenter(app.map.width / 2, app.map.height / 2);
   app.boid.setTarget(app.map.width / 2, (app.map.height / 2) - 1);
@@ -74,7 +71,8 @@ app.start = function () {
     app.drawCtx.fillStyle = 'red';
     app.drawCtx.fill();
   };
-  app.boid.draw();
+  
+  window.requestAnimationFrame(app.draw);
 };
 
 app.startFrame = function () {
@@ -122,6 +120,8 @@ app.webCLOffloadSelected = function () {
 
 app.draw = function () {
   "use strict";
+  
+  window.requestAnimationFrame(app.draw);
   
   app.startFrame();
   app.boid.draw();

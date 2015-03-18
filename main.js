@@ -74,7 +74,6 @@ app.start = function () {
   app.boid.defineBoid();
   
   app.boid.draw = function () {
-    app.startFrame();
     app.drawCtx.beginPath();
     app.drawCtx.moveTo(app.boid.points[0], app.boid.points[1]);
     app.drawCtx.lineTo(app.boid.points[2], app.boid.points[3]);
@@ -91,12 +90,6 @@ app.start = function () {
   
   app.firstDraw();
   window.requestAnimationFrame(app.draw);
-};
-
-app.startFrame = function () {
-  "use strict";
-  
-  //Nothing needed here at the moment...
 };
 
 app.canvasLMBDown = function (e) {
@@ -128,13 +121,17 @@ app.canvasMouseMove = function (e) {
 app.beginPress = function () {
   "use strict";
   
-  
+  app.bIsRunning = true;
+  app.startStop.textContent = "Stop";
+  app.startStop.onclick = app.stopPress;
 };
 
 app.stopPress = function () {
   "use strict";
   
-  
+  app.bIsRunning = false;
+  app.startStop.textContent = "Begin";
+  app.startStop.onclick = app.beginPress;
 };
 
 app.noOffloadSelected = function () {
@@ -156,12 +153,15 @@ app.firstDraw = function () {
   app.boid.draw();
 };
 
-app.draw = function () {
+app.draw = function (timestamp) {
   "use strict";
   
   window.requestAnimationFrame(app.draw);
   
-  app.startFrame();
+  if (app.bIsRunning) {
+    app.simulateRain(timestamp);
+  }
+  
   if (app.boid.bIsOrienting) {
     app.drawCtx.clearRect(0, 0, app.map.width, app.map.height);
     app.boid.setTarget(app.mouse.x, app.mouse.y);
@@ -176,6 +176,12 @@ app.draw = function () {
     app.boid.defineBoid();
     app.boid.draw();
   }
+};
+
+app.simulateRain = function (timestamp) {
+  "use strict";
+  
+  
 };
 
 app.resize = function () {

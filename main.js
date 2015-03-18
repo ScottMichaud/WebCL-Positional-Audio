@@ -16,6 +16,7 @@ window.pmAudio.clAudioCtx = window.pmAudio.clAudioCtx || {};
 app.init = function () {
   "use strict";
   
+  app.mouse = {x: 0, y: 0};
   app.map = document.getElementById('map');
   app.drawCtx = app.map.getContext('2d');
   app.map.width = document.getElementById('main').clientWidth;
@@ -85,41 +86,24 @@ app.startFrame = function () {
 
 app.canvasLMBDown = function (e) {
   "use strict";
-  var x,
-    y;
   
-  x = e.clientX - 75;
-  y = e.clientY - 75;
-  
-  app.boid.setCenter(x, y);
+  app.boid.setCenter(app.mouse.x, app.mouse.y);
   app.boid.bIsOrienting = true;
 };
 
 app.canvasLMBUp = function (e) {
   "use strict";
-  var x,
-    y;
   
-  x = e.clientX - 75;
-  y = e.clientY - 75;
-  
-  app.boid.setTarget(x, y);
+  app.boid.setTarget(app.mouse.x, app.mouse.y);
   app.boid.defineBoid();
   app.boid.bIsOrienting = false;
 };
 
 app.canvasMouseMove = function (e) {
   "use strict";
-  var x,
-    y;
   
-  x = e.clientX - 75;
-  y = e.clientY - 75;
-  
-  if (app.boid.bIsOrienting) {
-    app.boid.setTarget(x, y);
-    app.boid.defineBoid();
-  }
+  app.mouse.x = e.clientX - 75;
+  app.mouse.y = e.clientY - 75;
 };
 
 app.noOffloadSelected = function () {
@@ -149,6 +133,7 @@ app.draw = function () {
   app.startFrame();
   if (app.boid.bIsOrienting) {
     app.drawCtx.clearRect(0, 0, app.map.width, app.map.height);
+    app.boid.setTarget(app.mouse.x, app.mouse.y);
     app.boid.defineBoid();
     app.boid.draw();
   }

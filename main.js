@@ -79,8 +79,7 @@ app.start = function () {
 app.startFrame = function () {
   "use strict";
   
-  app.drawCtx.fillStyle = '#fff';
-  app.drawCtx.fillRect(0, 0, app.map.width, app.map.height);
+  app.drawCtx.clearRect(0, 0, app.map.width, app.map.height);
 };
 
 app.canvasLMBDown = function (e) {

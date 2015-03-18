@@ -22,6 +22,7 @@ app.init = function () {
   app.map.height = document.getElementById('main').clientHeight;
   app.map.addEventListener("mousedown", app.canvasLMBDown, false);
   app.map.addEventListener("mouseup", app.canvasLMBUp, false);
+  app.map.addEventListener("mousemove", app.canvasMouseMove, false);
 };
 
 app.start = function () {
@@ -91,6 +92,7 @@ app.canvasLMBDown = function (e) {
   y = e.clientY - 75;
   
   app.boid.setCenter(x, y);
+  app.boid.bIsOrienting = true;
 };
 
 app.canvasLMBUp = function (e) {
@@ -103,7 +105,20 @@ app.canvasLMBUp = function (e) {
   
   app.boid.setTarget(x, y);
   app.boid.defineBoid();
-  app.boid.draw();
+  app.boid.bIsOrienting = false;
+};
+
+app.canvasMouseMove = function (e) {
+  "use strict";
+  var x,
+    y;
+  
+  if (app.boid.bIsOrienting) {
+    x = e.clientX - 75;
+    y = e.clientY - 75;
+    app.boid.setTarget(x, y);
+    app.boid.defineBoid();
+  }
 };
 
 app.noOffloadSelected = function () {
@@ -122,6 +137,10 @@ app.draw = function () {
   "use strict";
   
   window.requestAnimationFrame(app.draw);
+  
+  if (app.boid.bIsOrienting) {
+    app.boid.defineBoid();
+  }
   
   app.startFrame();
   app.boid.draw();

@@ -168,6 +168,14 @@ app.draw = function () {
     app.boid.defineBoid();
     app.boid.draw();
   }
+  
+  if (app.bWasResized) {
+    app.bWasResized = false;
+    app.drawCtx.clearRect(0, 0, app.map.width, app.map.height);
+    app.boid.setTarget(app.mouse.x, app.mouse.y);
+    app.boid.defineBoid();
+    app.boid.draw();
+  }
 };
 
 app.resize = function () {
@@ -183,7 +191,7 @@ app.resize = function () {
   app.glPoints.height = app.map.height;
   app.glCtx.viewport(0, 0, app.glPoints.width, app.glPoints.height);
   
-  app.draw();
+  app.bWasResized = true;
 };
 
 window.addEventListener('DOMContentLoaded', app.init, false);

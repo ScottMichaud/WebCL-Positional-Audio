@@ -20,6 +20,9 @@ app.init = function () {
   
   app.mouse = {x: 0, y: 0};
   
+  app.radioWebAudio = document.getElementById('typeWebAudio');
+  app.radioCL = document.getElementById('typeWebCL');
+  
   app.startStop = document.getElementById('startStop');
   app.glPoints = document.getElementById('glPoints');
   app.glPoints.width = document.getElementById('main').clientWidth;
@@ -138,12 +141,16 @@ app.noOffloadSelected = function () {
   "use strict";
   
   document.getElementById('webclDeviceSelector').setAttribute('disabled', 'disabled');
+  app.radioCL.removeAttribute('checked');
+  app.radioWebAudio.setAttribute('checked', 'checked');
 };
 
 app.webCLOffloadSelected = function () {
   "use strict";
   
   document.getElementById('webclDeviceSelector').removeAttribute('disabled');
+  app.radioCL.setAttribute('checked', 'checked');
+  app.radioWebAudio.removeAttribute('checked');
 };
 
 app.firstDraw = function () {

@@ -113,9 +113,10 @@ app.canvasMouseMove = function (e) {
   var x,
     y;
   
+  x = e.clientX - 75;
+  y = e.clientY - 75;
+  
   if (app.boid.bIsOrienting) {
-    x = e.clientX - 75;
-    y = e.clientY - 75;
     app.boid.setTarget(x, y);
     app.boid.defineBoid();
   }

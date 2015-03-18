@@ -20,6 +20,7 @@ app.init = function () {
   
   app.mouse = {x: 0, y: 0};
   
+  app.startStop = document.getElementById('startStop');
   app.glPoints = document.getElementById('glPoints');
   app.glPoints.width = document.getElementById('main').clientWidth;
   app.glPoints.height = document.getElementById('main').clientHeight;
@@ -122,6 +123,18 @@ app.canvasMouseMove = function (e) {
   
   app.mouse.x = e.clientX - 75;
   app.mouse.y = e.clientY - 75;
+};
+
+app.beginPress = function () {
+  "use strict";
+  
+  
+};
+
+app.stopPress = function () {
+  "use strict";
+  
+  
 };
 
 app.noOffloadSelected = function () {

@@ -73,13 +73,14 @@ app.start = function () {
     app.drawCtx.fill();
   };
   
+  app.firstDraw();
   window.requestAnimationFrame(app.draw);
 };
 
 app.startFrame = function () {
   "use strict";
   
-  app.drawCtx.clearRect(0, 0, app.map.width, app.map.height);
+  //Nothing needed here at the moment...
 };
 
 app.canvasLMBDown = function (e) {
@@ -132,17 +133,24 @@ app.webCLOffloadSelected = function () {
   document.getElementById('webclDeviceSelector').removeAttribute('disabled');
 };
 
+app.firstDraw = function () {
+  "use strict";
+  
+  app.boid.defineBoid();
+  app.boid.draw();
+};
+
 app.draw = function () {
   "use strict";
   
   window.requestAnimationFrame(app.draw);
   
-  if (app.boid.bIsOrienting) {
-    app.boid.defineBoid();
-  }
-  
   app.startFrame();
-  app.boid.draw();
+  if (app.boid.bIsOrienting) {
+    app.drawCtx.clearRect(0, 0, app.map.width, app.map.height);
+    app.boid.defineBoid();
+    app.boid.draw();
+  }
 };
 
 app.resize = function () {

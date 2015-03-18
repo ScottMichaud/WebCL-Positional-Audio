@@ -178,6 +178,11 @@ app.resize = function () {
   app.boid.setCenter(app.map.width / 2, app.map.height / 2);
   app.boid.setTarget(app.map.width / 2, (app.map.height / 2) - 1);
   app.boid.defineBoid();
+    
+  app.glPoints.width = app.map.width;
+  app.glPoints.height = app.map.height;
+  app.glCtx.viewport(0, 0, app.glPoints.width, app.glPoints.height);
+  
   app.draw();
 };
 

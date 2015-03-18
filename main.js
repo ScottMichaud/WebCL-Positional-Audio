@@ -9,9 +9,11 @@
 *
 */
 
+//region Forward Declares
 var app = window.app || {};
 window.pmAudio = window.pmAudio || {};
 window.pmAudio.clAudioCtx = window.pmAudio.clAudioCtx || {};
+//endregion
 
 app.init = function () {
   "use strict";

@@ -196,6 +196,12 @@ app.simulateRain = function (timestamp) {
   
 };
 
+app.whenReady = function () {
+  "use strict";
+  
+  app.startStop.removeAttribute('disabled');
+};
+
 app.resize = function () {
   "use strict";
   

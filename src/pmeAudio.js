@@ -12,7 +12,7 @@ window.pmAudio = window.pmAudio || {};
 window.pmAudio.modules = window.pmAudio.modules || {};
 
 //This is a list of modules
-window.pmAudio.modules.list = ["src/core/clAudioCtx.js"];
+window.pmAudio.modules.list = ["src/core/clAudioCtx.js", "src/core/AudioSampleLoader.js"];
 
 //This loads the scripts in pmAudio.modules.list
 //It adds them to the DOM below the first script it sees

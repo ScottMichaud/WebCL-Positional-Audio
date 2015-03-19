@@ -67,7 +67,8 @@ app.start = function () {
   "use strict";
   var i,
     tempOption,
-    tempCLSelect;
+    tempCLSelect,
+    sampleLoader;
   
   tempCLSelect = document.getElementById('webclDeviceSelector');
   
@@ -89,6 +90,14 @@ app.start = function () {
   tempCLSelect.setAttribute('disabled', 'disabled');
   document.getElementById('typeWebCL').removeAttribute('checked');
   document.getElementById('typeWebAudio').setAttribute('checked', 'checked');
+  
+  sampleLoader = new AudioSampleLoader();
+  sampleLoader.src = 'assets/Water-Dirt-01.ogg';
+  sampleLoader.onload = function () {
+    app.rainSamples = sampleLoader.response;
+    app.setReady();
+  };
+  sampleLoader.send();
   
   app.boid = new window.boid(30);
   app.boid.setCenter(app.map.width / 2, app.map.height / 2);

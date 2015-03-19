@@ -43,6 +43,9 @@ app.init = function () {
     window.console.error('Could not acquire a WebGL Context');
   }
   
+  app.glCtx.clearColor(0.0, 0.0, 0.0, 0.0);
+  app.glCtx.clear(app.glCtx.COLOR_BUFFER_BIT);
+  
   app.map = document.getElementById('map');
   app.drawCtx = app.map.getContext('2d');
   app.map.width = document.getElementById('main').clientWidth;
@@ -190,6 +193,7 @@ app.draw = function (timestamp) {
   
   if (app.bIsRunning) {
     app.simulateRain(timestamp);
+    app.webGLDraw();
   }
   
   if (app.boid.bIsOrienting) {
@@ -230,9 +234,6 @@ app.simulateRain = function (timestamp) {
       app.pview[i + 2] = 1;
     }
   }
-  window.console.log(deltaTime);
-  window.console.log(deltaTime / app.decay);
-  window.console.log("x: " + app.pview[0] + " y: " + app.pview[1] + " life: " + app.pview[2]);
 };
 
 app.generateInitialParticles = function (number) {
@@ -270,7 +271,41 @@ app.setReady = function () {
 app.whenReady = function () {
   "use strict";
   
+  app.webGLPrepare();
   app.startStop.removeAttribute('disabled');
+};
+
+app.webGLPrepare = function () {
+  "use strict";
+  var fs,
+    vs;
+  
+  vs = window.getShader(app.glCtx, 'vtxRainPoints');
+  fs = window.getShader(app.glCtx, 'pxRainPoints');
+  
+  app.shaderProgram = app.glCtx.createProgram();
+  app.glCtx.attachShader(app.shaderProgram, vs);
+  app.glCtx.attachShader(app.shaderProgram, fs);
+  app.glCtx.linkProgram(app.shaderProgram);
+  
+  app.glCtx.useProgram(app.shaderProgram);
+  
+  app.vtxPositionAttribute = app.glCtx.getAttribLocation(app.shaderProgram, 'points');
+  app.glCtx.enableVertexAttribArray(app.vtxPositionAttribute);
+  
+  app.vtxRainBuffer = app.glCtx.createBuffer();
+  app.glCtx.bindBuffer(app.glCtx.ARRAY_BUFFER, app.vtxRainBuffer);
+  app.glCtx.bufferData(app.glCtx.ARRAY_BUFFER, app.pview, app.glCtx.STATIC_DRAW);
+};
+
+app.webGLDraw = function () {
+  "use strict";
+  
+  app.glCtx.clear(app.glCtx.COLOR_BUFFER_BIT);
+  app.glCtx.bindBuffer(app.glCtx.ARRAY_BUFFER, app.vtxRainBuffer);
+  app.glCtx.bufferData(app.glCtx.ARRAY_BUFFER, app.pview, app.glCtx.STATIC_DRAW);
+  app.glCtx.vertexAttribPointer(app.vtxPositionAttribute, 3, app.glCtx.FLOAT, false, 0, 0);
+  app.glCtx.drawArrays(app.glCtx.POINTS, 0, 4);
 };
 
 app.resize = function () {

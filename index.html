@@ -6,8 +6,31 @@
   <meta name="Author" content="Scott Michaud"/>
   <script src="src/pmeAudio.js"></script>
   <script src="classes/boid.js"></script>
+  <script src="webglstuff.js"></script>
   <script src="main.js"></script>
   <link rel="stylesheet" type="text/css" href="style.css">
+  
+  <script type="x-shader/x-vertex" id="vtxRainPoints">
+    attribute vec3 points;
+    //uniform float pointSize;
+    varying float life;
+    
+    void main() {
+      life = points.z;
+      gl_Position = vec4((2.0 * points.x) - 1.0, (2.0 * points.y) - 1.0, 0.0, 1.0);
+      gl_PointSize = 10.0;
+    }
+  </script>
+  <script type="x-shader/x-fragment" id="pxRainPoints">
+    precision mediump float;
+    
+    varying float life;
+    
+    void main() {
+      gl_FragColor = vec4(0.0, 0.0, 1.0, life);
+    }
+  </script>
+  
 </head>
 <body>
   <div id="top">

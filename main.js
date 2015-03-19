@@ -20,20 +20,9 @@ app.init = function () {
   
   app.mouse = {x: 0, y: 0};
   
-  /*
-  * Random integer between one and ten thousand minus one
-  * Allows about a factor of 210000 until we hit max Int32.
-  * This will drive our fast random number generator.
-  * Currently, that's also our max width and height.
-  * Keep that in mind if you ever support like, 210k monitors.
-  *
-  * Note that there are more than ten thousand possible simulations
-  * The initial state is set by actual Math.random()
-  * My random generator only uses the seed to increment randomness.
-  */
-  app.randomSeed = Math.floor(Math.random() * 10000);
+  //Particle properties.
   app.decay = 500; //Milliseconds
-  app.totalParticles = 500;
+  app.totalParticles = 500; //Max number at any one time.
   
   app.numReady = 0;
   app.totalReady = 1; //Total number of things that need to complete
@@ -226,21 +215,24 @@ app.simulateRain = function (timestamp) {
   var i,
     deltaTime;
   
-  for (i = 0; i < (app.particles.length / 3); i += 3) {
+  for (i = 0; i < app.totalParticles; i += 3) {
     deltaTime = timestamp - app.lastFrame;
-    app.particles[i + 2] -= (deltaTime / app.decay);
+    
+    app.pview[i + 2] -= (deltaTime / app.decay);
     
     //If particle is past decay, spawn a new one at a random location.
-    //Random -> (Current Pos * seed) + Other Axis Pos
-    //          all modulus width or height
     //
-    //New particles will have Z value of 1, which we can look for.
-    if (app.particles[i + 2] <= 0) {
-      app.particles[i] = ((app.particles[i] * app.randomSeed) + app.particles[i + 1]) % app.map.width;
-      app.particles[i + 1] = ((app.particles[i + 1] * app.randomSeed) + app.particles[i]) % app.map.height;
-      app.particles[i + 2] = 1;
+    //New particles will have Z value of 1, which we can look for as
+    //a trigger to spawn audio elsewhere.
+    if (app.pview[i + 2] <= 0) {
+      app.pview[i] = Math.random();
+      app.pview[i + 1] = Math.random();
+      app.pview[i + 2] = 1;
     }
   }
+  window.console.log(deltaTime);
+  window.console.log(deltaTime / app.decay);
+  window.console.log("x: " + app.pview[0] + " y: " + app.pview[1] + " life: " + app.pview[2]);
 };
 
 app.generateInitialParticles = function (number) {
@@ -248,15 +240,18 @@ app.generateInitialParticles = function (number) {
   var i;
   
   //Data Type AOS: {X, Y, Life}
-  app.particles = new Array(number * 3);
-  app.totalParticles = number; //In case I call manually by web console.
-                               //Shouldn't use this though. 
-                               //Better: app.particles.length / 3
+  //X -> 32bit (4 bytes)
+  //Y -> 32bit (4 bytes)
+  //Life -> 32bit (4 bytes)
+  //12 bytes per structure
+  app.particles = new window.ArrayBuffer(number * 12);
+  app.pview = new window.Float32Array(app.particles);
+  app.totalParticles = number;
   
   for (i = 0; i < (3 * number); i += 3) {
-    app.particles[i] = Math.floor(Math.random() * (app.map.width + 1));
-    app.particles[i + 1] = Math.floor(Math.random() * (app.map.height + 1));
-    app.particles[i + 2] = Math.random();
+    app.pview[i] = Math.random();
+    app.pview[i + 1] = Math.random();
+    app.pview[i + 2] = Math.random();
   }
   
   app.setReady();

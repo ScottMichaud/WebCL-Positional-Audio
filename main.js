@@ -91,7 +91,7 @@ app.start = function () {
   document.getElementById('typeWebCL').removeAttribute('checked');
   document.getElementById('typeWebAudio').setAttribute('checked', 'checked');
   
-  sampleLoader = new AudioSampleLoader();
+  sampleLoader = new window.AudioSampleLoader();
   sampleLoader.src = 'assets/Water-Dirt-01.ogg';
   sampleLoader.onload = function () {
     app.rainSamples = sampleLoader.response;

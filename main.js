@@ -220,7 +220,7 @@ app.simulateRain = function (timestamp) {
   var i,
     deltaTime;
   
-  for (i = 0; i < app.totalParticles; i += 3) {
+  for (i = 0; i < 3 * app.totalParticles; i += 3) {
     deltaTime = timestamp - app.lastFrame;
     
     app.pview[i + 2] -= (deltaTime / app.decay);

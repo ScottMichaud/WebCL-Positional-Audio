@@ -249,6 +249,9 @@ app.generateInitialParticles = function (number) {
   
   //Data Type AOS: {X, Y, Life}
   app.particles = new Array(number * 3);
+  app.totalParticles = number; //In case I call manually by web console.
+                               //Shouldn't use this though. 
+                               //Better: app.particles.length / 3
   
   for (i = 0; i < (3 * number); i += 3) {
     app.particles[i] = Math.floor(Math.random() * (app.map.width + 1));

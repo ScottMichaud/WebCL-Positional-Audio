@@ -20,6 +20,11 @@ app.init = function () {
   
   app.mouse = {x: 0, y: 0};
   
+  //Random integer between one and a million minus one
+  //Allows about a factor of 2100 until we hit max Int32.
+  //This will drive our fast random number generator.
+  app.randomSeed = Math.floor(Math.random() * 1000000);
+  
   app.radioWebAudio = document.getElementById('typeWebAudio');
   app.radioCL = document.getElementById('typeWebCL');
   

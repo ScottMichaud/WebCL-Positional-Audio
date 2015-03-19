@@ -305,7 +305,7 @@ app.webGLDraw = function () {
   app.glCtx.bindBuffer(app.glCtx.ARRAY_BUFFER, app.vtxRainBuffer);
   app.glCtx.bufferData(app.glCtx.ARRAY_BUFFER, app.pview, app.glCtx.STATIC_DRAW);
   app.glCtx.vertexAttribPointer(app.vtxPositionAttribute, 3, app.glCtx.FLOAT, false, 0, 0);
-  app.glCtx.drawArrays(app.glCtx.POINTS, 0, 4);
+  app.glCtx.drawArrays(app.glCtx.POINTS, 0, app.totalParticles);
 };
 
 app.resize = function () {

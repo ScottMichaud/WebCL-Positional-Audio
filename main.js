@@ -20,10 +20,20 @@ app.init = function () {
   
   app.mouse = {x: 0, y: 0};
   
-  //Random integer between one and a million minus one
-  //Allows about a factor of 2100 until we hit max Int32.
-  //This will drive our fast random number generator.
-  app.randomSeed = Math.floor(Math.random() * 1000000);
+  /*
+  * Random integer between one and ten thousand minus one
+  * Allows about a factor of 210000 until we hit max Int32.
+  * This will drive our fast random number generator.
+  * Currently, that's also our max width and height.
+  * Keep that in mind if you ever support like, 210k monitors.
+  *
+  * Note that there are more than ten thousand possible simulations
+  * The initial state is set by actual Math.random()
+  * My random generator only uses the seed to increment randomness.
+  */
+  app.randomSeed = Math.floor(Math.random() * 10000);
+  app.decay = 500; //Milliseconds
+  app.totalParticles = 500;
   
   app.radioWebAudio = document.getElementById('typeWebAudio');
   app.radioCL = document.getElementById('typeWebCL');
@@ -98,6 +108,10 @@ app.start = function () {
   
   app.firstDraw();
   window.requestAnimationFrame(app.draw);
+  
+  window.setTimeout(function () {
+    app.generateInitialParticles(app.totalParticles);
+  }, 0);
 };
 
 app.canvasLMBDown = function (e) {
@@ -132,6 +146,8 @@ app.beginPress = function () {
   app.bIsRunning = true;
   app.startStop.textContent = "Stop";
   app.startStop.onclick = app.stopPress;
+  
+  app.lastFrame = window.performance.now();
 };
 
 app.stopPress = function () {
@@ -188,12 +204,46 @@ app.draw = function (timestamp) {
     app.boid.defineBoid();
     app.boid.draw();
   }
+  
+  app.lastFrame = timestamp;
 };
 
 app.simulateRain = function (timestamp) {
   "use strict";
+  var i,
+    deltaTime;
   
+  for (i = 0; i < (app.particles.length / 3); i += 3) {
+    deltaTime = timestamp - app.lastFrame;
+    app.particles[i + 2] -= (deltaTime / app.decay);
+    
+    //If particle is past decay, spawn a new one at a random location.
+    //Random -> (Current Pos * seed) + Other Axis Pos
+    //          all modulus width or height
+    //
+    //New particles will have Z value of 1, which we can look for.
+    if (app.particles[i + 2] <= 0) {
+      app.particles[i] = ((app.particles[i] * app.randomSeed) + app.particles[i + 1]) % app.map.width;
+      app.particles[i + 1] = ((app.particles[i + 1] * app.randomSeed) + app.particles[i]) % app.map.height;
+      app.particles[i + 2] = 1;
+    }
+  }
+};
+
+app.generateInitialParticles = function (number) {
+  "use strict";
+  var i;
   
+  //Data Type AOS: {X, Y, Life}
+  app.particles = new Array(number * 3);
+  
+  for (i = 0; i < (3 * number); i += 3) {
+    app.particles[i] = Math.floor(Math.random() * (app.map.width + 1));
+    app.particles[i + 1] = Math.floor(Math.random() * (app.map.height + 1));
+    app.particles[i + 2] = Math.random();
+  }
+  
+  app.whenReady();
 };
 
 app.whenReady = function () {

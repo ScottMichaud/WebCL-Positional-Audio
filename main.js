@@ -35,6 +35,10 @@ app.init = function () {
   app.decay = 500; //Milliseconds
   app.totalParticles = 500;
   
+  app.numReady = 0;
+  app.totalReady = 1; //Total number of things that need to complete
+                      //After "load" event before Begin button enables.
+  
   app.radioWebAudio = document.getElementById('typeWebAudio');
   app.radioCL = document.getElementById('typeWebCL');
   
@@ -243,7 +247,17 @@ app.generateInitialParticles = function (number) {
     app.particles[i + 2] = Math.random();
   }
   
-  app.whenReady();
+  app.setReady();
+};
+
+app.setReady = function () {
+  "use strict";
+  
+  app.numReady += 1;
+  
+  if (app.numReady === app.totalReady) {
+    app.whenReady();
+  }
 };
 
 app.whenReady = function () {

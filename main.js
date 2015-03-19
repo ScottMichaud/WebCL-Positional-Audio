@@ -161,6 +161,7 @@ app.stopPress = function () {
   app.bIsRunning = false;
   app.startStop.textContent = "Begin";
   app.startStop.onclick = app.beginPress;
+  app.glCtx.clear(app.glCtx.COLOR_BUFFER_BIT);
 };
 
 app.noOffloadSelected = function () {

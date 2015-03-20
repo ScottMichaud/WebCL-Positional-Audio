@@ -22,7 +22,7 @@ app.init = function () {
   
   //Particle properties.
   app.decay = 500; //Milliseconds
-  app.totalParticles = 500; //Max number at any one time.
+  app.totalParticles = 10; //Max number at any one time.
   
   app.numReady = 0;
   app.totalReady = 1; //Total number of things that need to complete
@@ -53,6 +53,10 @@ app.init = function () {
   app.map.addEventListener("mousedown", app.canvasLMBDown, false);
   app.map.addEventListener("mouseup", app.canvasLMBUp, false);
   app.map.addEventListener("mousemove", app.canvasMouseMove, false);
+  
+  //FIXME: Sort through this better.
+  app.aCtx = new window.AudioContext();
+  app.aListener = app.aCtx.listener;
 };
 
 app.start = function () {
@@ -245,6 +249,10 @@ app.simulateRain = function (timestamp) {
       app.pview[i + 2] = 1;
     }
   }
+  
+  if (app.radioWebAudio.getAttribute('checked') === 'checked') {
+    app.noOffloadAddSounds();
+  }
 };
 
 app.generateInitialParticles = function (number) {
@@ -338,6 +346,33 @@ app.resize = function () {
 //endregion
 
 //region WebAudio Processing
+
+app.noOffloadAddSounds = function () {
+  "use strict";
+  var i,
+    src,
+    panner,
+    gain,
+    location;
+  
+  app.aListener.setPosition(app.boid.location.x / app.map.width, app.boid.location.y / app.map.height, 0);
+  app.aListener.setOrientation(-app.boid.direction.x, -app.boid.direction.y, 0, 0, 0, 1);
+  
+  for (i = 0; i < 3 * app.totalParticles; i += 3) {
+    if (app.pview[i + 2] === 1) {
+      src = app.aCtx.createBufferSource();
+      
+      //They all pull from the same sample currently.
+      src.buffer = app.rainSamples;
+      
+      panner = app.aCtx.createPanner();
+      panner.setPosition(app.pview[i], app.pview[i + 1], 0);
+      src.connect(panner);
+      panner.connect(app.aCtx.destination);
+      src.start(0);
+    }
+  }
+};
 
 //endregion
 

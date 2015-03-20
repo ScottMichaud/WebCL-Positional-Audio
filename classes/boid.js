@@ -94,5 +94,8 @@
     this.points[6] = this.points[6] - (rotatedDirection.x * this.halfWidth);
     this.points[7] = this.location.y - (this.size * 0.25 * direction.y);
     this.points[7] = this.points[7] - (rotatedDirection.y * this.halfWidth);
+    
+    //This will be useful for listener direction.
+    this.direction = direction;
   };
 }());

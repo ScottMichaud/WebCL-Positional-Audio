@@ -163,6 +163,15 @@ app.beginPress = function () {
   app.startStop.onclick = app.stopPress;
   
   app.lastFrame = window.performance.now();
+  
+  if (app.radioCL.hasAttribute('checked')) {
+    app.clCtx.selectProcessor(document.getElementById('webclDeviceSelector').selectedIndex);
+    app.getKernel();
+    app.setupKernel(512);
+    app.scriptNode = app.aCtx.createScriptProcessor(512, 2, 2);
+    app.scriptNode.onaudioprocess = app.audioProcess;
+    app.scriptNode.connect(app.aCtx.destination);
+  }
 };
 
 app.stopPress = function () {
@@ -172,6 +181,9 @@ app.stopPress = function () {
   app.startStop.textContent = "Begin";
   app.startStop.onclick = app.beginPress;
   app.glCtx.clear(app.glCtx.COLOR_BUFFER_BIT);
+  if (app.scriptNode) {
+    app.scriptNode.disconnect();
+  }
 };
 
 app.noOffloadSelected = function () {
@@ -207,7 +219,9 @@ app.draw = function (timestamp) {
   window.requestAnimationFrame(app.draw);
   
   if (app.bIsRunning) {
-    app.simulateRain(timestamp);
+    if (!app.radioCL.hasAttribute('checked')) {
+      app.simulateRain(timestamp);
+    }
     app.webGLDraw();
   }
   
@@ -377,7 +391,81 @@ app.noOffloadAddSounds = function () {
 //endregion
 
 //region WebCL Audio Processing
+app.getKernel = function () {
+  "use strict";
+  
+  app.clCtx.kernelSrc = document.getElementById('clMixSamples').text;
+};
 
+app.setupKernel = function (numSamples) {
+  "use strict";
+  
+  app.numSamples = numSamples;
+  
+  app.bufVtx = app.clCtx.clCtx.createBuffer(window.WebCL.MEM_READ_ONLY, app.particles.byteLength);
+  app.bufDst = app.clCtx.clCtx.createBuffer(window.WebCL.MEM_WRITE_ONLY, 8 * numSamples);
+  app.bufSounds = app.clCtx.clCtx.createBuffer(window.WebCL.MEM_READ_ONLY, app.rainSamples.getChannelData(0).byteLength);
+  app.clProgram = app.clCtx.clCtx.createProgram(app.clCtx.kernelSrc);
+  app.device = app.clCtx.clCtx.getInfo(window.WebCL.CONTEXT_DEVICES)[0];
+  app.clProgram.build([app.device], "");
+  app.kernel = app.clProgram.createKernel("clMixSamples");
+  app.kernel.setArg(0, app.bufVtx);
+  app.kernel.setArg(1, app.bufDst);
+  app.kernel.setArg(2, app.bufSounds);
+  app.kernel.setArg(3, new window.Float32Array([(app.boid.location.x / app.map.width), (app.boid.location.y / app.map.height)]));
+  app.kernel.setArg(4, new window.Float32Array([app.boid.direction.x, app.boid.direction.y]));
+  app.kernel.setArg(5, new window.Uint32Array([app.totalParticles]));
+  app.kernel.setArg(6, new window.Uint32Array([app.rainSamples.getChannelData(0).byteLength / 4]));
+};
+
+app.useKernel = function () {
+  "use strict";
+  var cmdQueue,
+    output;
+  
+  app.simulateRain(window.performance.now());
+  
+  app.kernel.setArg(3, new window.Float32Array([(app.boid.location.x / app.map.width), (app.boid.location.y / app.map.height)]));
+  app.kernel.setArg(4, new window.Float32Array([app.boid.direction.x, app.boid.direction.y]));
+  
+  cmdQueue = app.clCtx.clCtx.createCommandQueue(app.device);
+  cmdQueue.enqueueWriteBuffer(app.bufVtx, false, 0, app.totalParticles * 12, app.pview);
+  cmdQueue.enqueueWriteBuffer(app.bufSounds, false, 0, app.rainSamples.getChannelData(0).byteLength, app.rainSamples.getChannelData(0));
+  
+  cmdQueue.enqueueNDRangeKernel(app.kernel, 1, null, [app.numSamples]);
+  
+  output = new window.Float32Array(app.numSamples * 2);
+  cmdQueue.enqueueReadBuffer(app.bufDst, false, 0, app.numSamples * 8, output);
+  
+  return output;
+};
+
+app.audioProcess = function (e) {
+  "use strict";
+  var inputBuffer,
+    outputBuffer,
+    response,
+    outputLeft,
+    outputRight,
+    i;
+  
+  inputBuffer = e.inputBuffer;
+  outputBuffer = e.outputBuffer;
+  
+  response = app.useKernel();
+  app.testresponse = response;
+  
+  outputLeft = outputBuffer.getChannelData(0);
+  outputRight = outputBuffer.getChannelData(1);
+  
+  for (i = 0; i < 2 * app.numSamples; i += 2) {
+    outputLeft[i] = response[i];
+    outputRight[i] = response[i + 1];
+  }
+  app.testbuffer = outputBuffer;
+  
+  
+};
 //endregion
 
 //region Window Event Listeners

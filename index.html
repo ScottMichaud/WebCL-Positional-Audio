@@ -12,7 +12,6 @@
   
   <script type="x-shader/x-vertex" id="vtxRainPoints">
     attribute vec3 points;
-    //uniform float pointSize;
     varying float life;
     
     void main() {
@@ -30,7 +29,73 @@
       gl_FragColor = vec4(0.0, 0.0, 1.0, life);
     }
   </script>
-  
+  <script type="text/x-opencl" id="clMixSamples">
+    __kernel void clMixSamples(__global float3* vtx,
+                             __global float2* dst,
+                             __global float* sounds,
+                             float2 obs_loc,
+                             float2 obs_dir,
+                             uint numVtx,
+                             uint numSamples)
+  {
+      //dst is float2 because it's stereo.
+
+      int i = get_global_id(0); //Sample number
+
+      //Life (vtx.s2) is 1 through 0, which is 500ms.
+      //That is how far through the sounds array (plus offset if we'd have more
+      //than a single sample) we need to pick from.
+      //Don't need to synchronize with WebAudio clock.
+
+      float2 output = (float2)(0.0f, 0.0f);
+      float2 obs_right = (float2)(-obs_dir.y, obs_dir.x);
+
+      for (int itr=0; itr < numVtx; itr++)
+      {
+          //Assuming 44.1KHz Sample Rate and half-second life
+          //Get entry number of source audio buffer array
+          int src_pos = (int)(vtx[itr].z * 22050.0f);
+          //src_pos = 22050 - src_pos;
+          
+          float src_sample = 0.0f;
+          
+          if (src_pos < (numSamples + i))
+          {
+            //Get the sample of that index
+            src_sample = sounds[src_pos + i];
+            //src_sample = clamp(src_sample, -1.0f, 1.0f);
+          }
+          else
+          {
+            src_sample = 0.0f;
+          }
+
+          //Account for inverse-square falloff
+          float2 src_loc = (float2)(vtx[itr].x, vtx[itr].y);
+          float falloff = distance(obs_loc, src_loc);
+          falloff = falloff * falloff;
+
+          //Account for stereo
+          float2 dir = src_loc - obs_loc;
+
+          //Get value in right direction. 1 for full-right, 0 for full-left
+          float r_balance = dot(dir, obs_right);
+          r_balance += 1.0f;
+          r_balance = r_balance * 0.5f;
+          float r_src = src_sample * r_balance;
+          output.y += (r_src / falloff);
+
+          //Get value in left direction. 0 for full-right, 1 for full-left
+          float l_balance = dot(dir, -obs_right);
+          l_balance += 1.0f;
+          l_balance = l_balance * 0.5f;
+          float l_src = src_sample * l_balance;
+          output.x += (l_src / falloff);
+      }
+
+      dst[i] = 60.f * output;
+  }
+  </script>
 </head>
 <body>
   <div id="top">

@@ -119,6 +119,8 @@ app.start = function () {
   }, 0);
 };
 
+//region Direct User Input Stuff
+
 app.canvasLMBDown = function (e) {
   "use strict";
   
@@ -144,6 +146,10 @@ app.canvasMouseMove = function (e) {
   app.mouse.x = e.clientX - 75;
   app.mouse.y = e.clientY - 75;
 };
+
+//endregion
+
+//region UI Element Stuff
 
 app.beginPress = function () {
   "use strict";
@@ -179,6 +185,10 @@ app.webCLOffloadSelected = function () {
   app.radioCL.setAttribute('checked', 'checked');
   app.radioWebAudio.removeAttribute('checked');
 };
+
+//endregion
+
+//region Drawing and Stuff
 
 app.firstDraw = function () {
   "use strict";
@@ -325,6 +335,18 @@ app.resize = function () {
   app.bWasResized = true;
 };
 
+//endregion
+
+//region WebAudio Processing
+
+//endregion
+
+//region WebCL Audio Processing
+
+//endregion
+
+//region Window Event Listeners
 window.addEventListener('DOMContentLoaded', app.init, false);
 window.addEventListener('load', app.start, false);
 window.addEventListener('resize', app.resize, false);
+//endregion

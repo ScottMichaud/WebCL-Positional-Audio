@@ -55,7 +55,7 @@
           //Assuming 44.1KHz Sample Rate and half-second life
           //Get entry number of source audio buffer array
           int src_pos = (int)(vtx[itr].z * 22050.0f);
-          //src_pos = 22050 - src_pos;
+          src_pos = 22050 - src_pos;
           
           float src_sample = 0.0f;
           

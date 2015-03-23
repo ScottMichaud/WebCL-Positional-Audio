@@ -246,7 +246,11 @@ app.draw = function (timestamp) {
 app.simulateRain = function (timestamp) {
   "use strict";
   var i,
-    deltaTime;
+    j,
+    deltaTime,
+    webcl;
+  
+  webcl = app.radioCL.hasAttribute('checked');
   
   for (i = 0; i < 3 * app.totalParticles; i += 3) {
     deltaTime = timestamp - app.lastFrame;
@@ -261,6 +265,13 @@ app.simulateRain = function (timestamp) {
       app.pview[i] = Math.random();
       app.pview[i + 1] = Math.random();
       app.pview[i + 2] = 1;
+    }
+    
+    j = ((i / 3) * 2);
+    
+    if (webcl) {
+      app.intView[j] = 0; //Just one sound sample so far.
+      app.intView[j + 1] = app.intView[j + 1] - app.numSamples;
     }
   }
   
@@ -401,6 +412,9 @@ app.setupKernel = function (numSamples) {
   "use strict";
   
   app.numSamples = numSamples;
+  
+  //First entry is sampleOffset, second entry is position along.
+  app.intView = new window.Int32Array(numSamples * 2);
   
   app.bufVtx = app.clCtx.clCtx.createBuffer(window.WebCL.MEM_READ_ONLY, app.particles.byteLength);
   app.bufDst = app.clCtx.clCtx.createBuffer(window.WebCL.MEM_WRITE_ONLY, 8 * numSamples);

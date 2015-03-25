@@ -30,7 +30,14 @@
     }
   </script>
   <script type="text/x-opencl" id="clMixSamples">
-    __kernel void clMixSamples(__global float3* vtx,
+    typedef struct {
+      float x;
+      float y;
+      float life;
+      int sampleOffset;
+    } stParticle;
+    
+    __kernel void clMixSamples(__global stParticle* vtx,
                              __global float2* dst,
                              __global float* sounds,
                              float2 obs_loc,
@@ -54,7 +61,7 @@
       {
           //Assuming 44.1KHz Sample Rate and half-second life
           //Get entry number of source audio buffer array
-          int src_pos = (int)(vtx[itr].z * 22050.0f);
+          int src_pos = (int)(vtx[itr].life * 22050.0f);
           src_pos = 22050 - src_pos;
           
           float src_sample = 0.0f;

@@ -31,13 +31,32 @@
   </script>
   <script type="text/x-opencl" id="clMixSamples">
     typedef struct {
-      float x;
-      float y;
+      float2 pos;
       float life;
-      int sampleOffset;
+      int sampleStart;
+      int sampleEnd;
+      int samplePosition;
     } stParticle;
     
-    __kernel void clMixSamples(__global stParticle* vtx,
+    // Particle Structure:
+    //
+    // pos: x, y coordinate of map. 0 to 1. (8 bytes)
+    //
+    // life: used by WebGL for opacity. Ignore. (4 bytes)
+    //
+    // sampleStart: Added for multiple sounds, where this sound starts. (4 bytes)
+    // This can handle 13.5 hours of 44.1 kHz samples, per batch.
+    //
+    // sampleEnd: Stop at this index number. Same as above. (4 bytes).
+    // Wish I was using a uint32 but JavaScript doesn't like those.
+    // 13.5 hours is pretty good though.
+    //
+    // samplePosition: If negative, delay. If positive or 0, number of samples
+    // after sampleStart for start of this batch. (4 bytes).
+    //
+    // Total: 8 + 4 + 4 + 4 + 4 = 24 Bytes per struct
+    
+    __kernel void clMixSamples(__global stParticle* particles,
                              __global float2* dst,
                              __global float* sounds,
                              float2 obs_loc,

@@ -57,12 +57,10 @@
     // Total: 8 + 4 + 4 + 4 + 4 = 24 Bytes per struct
     
     __kernel void clMixSamples(__global stParticle* particles,
-                             __global float2* dst,
-                             __global float* sounds,
-                             float2 obs_loc,
-                             float2 obs_dir,
-                             uint numVtx,
-                             uint numSamples)
+                             __global float2* output,
+                             __global float* soundCues,
+                             float2 obsLocation,
+                             float2 obsDirection)
   {
       //dst is float2 because it's stereo.
 

@@ -416,20 +416,18 @@ app.setupKernel = function (numSamples) {
   //First entry is sampleOffset, second entry is position along.
   app.intView = new window.Int32Array(numSamples * 2);
   
-  app.bufVtx = app.clCtx.clCtx.createBuffer(window.WebCL.MEM_READ_ONLY, app.particles.byteLength);
-  app.bufDst = app.clCtx.clCtx.createBuffer(window.WebCL.MEM_WRITE_ONLY, 8 * numSamples);
-  app.bufSounds = app.clCtx.clCtx.createBuffer(window.WebCL.MEM_READ_ONLY, app.rainSamples.getChannelData(0).byteLength);
+  app.bufParticles = app.clCtx.clCtx.createBuffer(window.WebCL.MEM_READ_ONLY, app.particles.byteLength);
+  app.bufOutput = app.clCtx.clCtx.createBuffer(window.WebCL.MEM_WRITE_ONLY, 8 * numSamples);
+  app.bufSoundCues = app.clCtx.clCtx.createBuffer(window.WebCL.MEM_READ_ONLY, app.rainSamples.getChannelData(0).byteLength);
   app.clProgram = app.clCtx.clCtx.createProgram(app.clCtx.kernelSrc);
   app.device = app.clCtx.clCtx.getInfo(window.WebCL.CONTEXT_DEVICES)[0];
   app.clProgram.build([app.device], "");
   app.kernel = app.clProgram.createKernel("clMixSamples");
-  app.kernel.setArg(0, app.bufVtx);
-  app.kernel.setArg(1, app.bufDst);
-  app.kernel.setArg(2, app.bufSounds);
+  app.kernel.setArg(0, app.bufParticles);
+  app.kernel.setArg(1, app.bufOutput);
+  app.kernel.setArg(2, app.bufSoundCues);
   app.kernel.setArg(3, new window.Float32Array([(app.boid.location.x / app.map.width), (app.boid.location.y / app.map.height)]));
   app.kernel.setArg(4, new window.Float32Array([app.boid.direction.x, app.boid.direction.y]));
-  app.kernel.setArg(5, new window.Uint32Array([app.totalParticles]));
-  app.kernel.setArg(6, new window.Uint32Array([app.rainSamples.getChannelData(0).byteLength / 4]));
 };
 
 app.useKernel = function () {
@@ -443,7 +441,7 @@ app.useKernel = function () {
   app.kernel.setArg(4, new window.Float32Array([app.boid.direction.x, app.boid.direction.y]));
   
   cmdQueue = app.clCtx.clCtx.createCommandQueue(app.device);
-  cmdQueue.enqueueWriteBuffer(app.bufVtx, false, 0, app.totalParticles * 12, app.pview);
+  cmdQueue.enqueueWriteBuffer(app.bufVtx, false, 0, app.particles.byteLength, app.pview);
   cmdQueue.enqueueWriteBuffer(app.bufSounds, false, 0, app.rainSamples.getChannelData(0).byteLength, app.rainSamples.getChannelData(0));
   
   cmdQueue.enqueueNDRangeKernel(app.kernel, 1, null, [app.numSamples]);

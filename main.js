@@ -261,17 +261,18 @@ app.draw = function (timestamp) {
   
   //pragma region Animating Resize
   if (app.bWasResized) {
+    
     app.bWasResized = false;
     
     app.elRain.width = app.elMap.clientWidth;
     app.elRain.height = app.elMap.clientHeight;
     app.gl.viewport(0, 0, app.elRain.width, app.elRain.height);
-    app.elBoid.width = app.elMap.clientwidth;
-    app.elBoid.height = app.elMap.cleintHeight;
+    app.elBoid.width = app.elMap.clientWidth;
+    app.elBoid.height = app.elMap.clientHeight;
     
-    app.c2d.clearRect(0, 0, app.elMap.width, app.elMap.height);
-    app.boid.setCenter(app.elMap.width / 2, app.elMap.height / 2);
-    app.boid.setTarget(app.elMap.width / 2, (app.elMap.height / 2) - 1);
+    app.c2d.clearRect(0, 0, app.elBoid.width, app.elBoid.height);
+    app.boid.setCenter(app.elBoid.width / 2, app.elBoid.height / 2);
+    app.boid.setTarget(app.elBoid.width / 2, (app.elBoid.height / 2) - 1);
     app.boid.defineBoid();
     app.boid.draw();
   }

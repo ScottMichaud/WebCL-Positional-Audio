@@ -121,9 +121,9 @@
 <body>
   <div id="top">
     <div id="upperOptions">
-      <input id="typeWebAudio" type="radio" name="apiType" value="webaudio" onclick="app.noOffloadSelected();" autocomplete="off">
+      <input id="typeWebAudio" type="radio" name="apiType" value="webaudio" onclick="app.selectNoOffload();" autocomplete="off">
       <label for="webaudio">No Offloading</label>
-      <input id="typeWebCL" type="radio" name="apiType" value="webcl" onclick="app.webCLOffloadSelected();" autocomplete="off">
+      <input id="typeWebCL" type="radio" name="apiType" value="webcl" onclick="app.selectWebCL();" autocomplete="off">
       <label for="webcl">WebCL Offload</label>
       <select name="webclDevice" id="webclDeviceSelector">
       </select>
@@ -136,7 +136,7 @@
   </div>
   <div id="main">
     <canvas id="glPoints"></canvas>
-    <canvas id="map"></canvas>
+    <canvas id="boid"></canvas>
   </div>
 </body>
 </html>

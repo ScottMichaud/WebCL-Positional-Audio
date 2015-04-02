@@ -6,142 +6,132 @@
 */
 
 /*
-*
+* Main program logic
 */
 
 //region Forward Declares
 var app = window.app || {};
+app.rain = app.rain || {};
 window.pmAudio = window.pmAudio || {};
 window.pmAudio.clAudioCtx = window.pmAudio.clAudioCtx || {};
 //endregion
 
 app.init = function () {
   "use strict";
+  var fs,
+    vs;
   
   app.mouse = {x: 0, y: 0};
+  app.bIsRunning = false;
   
-  //Particle properties.
-  app.decay = 500; //Milliseconds
-  app.totalParticles = 10; //Max number at any one time.
+  app.rain.max = 50;
+  app.rain.decay = 300; //Milliseconds
+  app.rain.timestep = 512; //Not relevant for WebAudio, just offloading.
   
-  app.numReady = 0;
-  app.totalReady = 1; //Total number of things that need to complete
-                      //After "load" event before Begin button enables.
+  app.elMap = document.getElementById('main'); //Container for various canvas layers.
   
-  app.radioWebAudio = document.getElementById('typeWebAudio');
-  app.radioCL = document.getElementById('typeWebCL');
+  app.elWebAudio = document.getElementById('typeWebAudio');
+  app.elWebCL = document.getElementById('typeWebCL');
+  app.elDeviceSelector = document.getElementById('webclDeviceSelector');
   
-  app.startStop = document.getElementById('startStop');
-  app.glPoints = document.getElementById('glPoints');
-  app.glPoints.width = document.getElementById('main').clientWidth;
-  app.glPoints.height = document.getElementById('main').clientHeight;
+  app.elStart = document.getElementById('startStop');
+  app.elRain = document.getElementById('glPoints');
+  app.elRain.width = app.elMap.clientWidth;
+  app.elRain.height = app.elMap.clientHeight;
+  
   try {
-    app.glCtx = app.glPoints.getContext('webgl') || app.glPoints.getContext('experimental-webgl');
+    app.gl = app.elRain.getContext('webgl') || app.elRain.getContext('experimental-webgl');
   } catch (e) {}
   
-  if (!app.glCtx) {
-    window.console.error('Could not acquire a WebGL Context');
+  if (!app.gl) {
+    window.console.error('Could not acquire a WebGL context');
   }
   
-  app.glCtx.clearColor(0.0, 0.0, 0.0, 0.0);
-  app.glCtx.clear(app.glCtx.COLOR_BUFFER_BIT);
+  app.gl.clearColor(0.0, 0.0, 0.0, 0.0);
+  app.gl.clear(app.gl.COLOR_BUFFER_BIT);
   
-  app.map = document.getElementById('map');
-  app.drawCtx = app.map.getContext('2d');
-  app.map.width = document.getElementById('main').clientWidth;
-  app.map.height = document.getElementById('main').clientHeight;
-  app.map.addEventListener("mousedown", app.canvasLMBDown, false);
-  app.map.addEventListener("mouseup", app.canvasLMBUp, false);
-  app.map.addEventListener("mousemove", app.canvasMouseMove, false);
+  fs = window.getShader(app.gl, 'pxRainPoints');
+  vs = window.getShader(app.gl, 'vtxRainPoints');
   
-  //FIXME: Sort through this better.
-  app.aCtx = new window.AudioContext();
-  app.aListener = app.aCtx.listener;
+  app.shaderProgram = app.gl.createProgram();
+  app.gl.attachShader(app.shaderProgram, vs);
+  app.gl.attachShader(app.shaderProgram, fs);
+  app.gl.linkProgram(app.shaderProgram);
+  
+  app.gl.useProgram(app.shaderProgram);
+  
+  app.vtxPositionAttribute = app.gl.getAttribLocation(app.shaderProgram, 'points');
+  app.gl.enableVertexAttribArray(app.vtxPositionAttribute);
+  app.vtxRainBuffer = app.gl.createBuffer();
+  
+  app.elBoid = document.getElementById('boid');
+  app.c2d = app.elBoid.getContext('2d');
+  app.elBoid.width = app.elMap.clientWidth;
+  app.elBoid.height = app.elMap.clientHeight;
+  app.elMap.addEventListener('mousedown', app.canvasLMBDown, false);
+  app.elMap.addEventListener('mouseup', app.canvasLMBUp, false);
+  app.elMap.addEventListener('mousemove', app.canvasMouseMove, false);
+  
+  app.audio = new window.AudioContext();
+  app.generateInitialParticles(app.rain.max);
 };
 
-app.start = function () {
+app.load = function () {
   "use strict";
   var i,
-    tempOption,
-    tempCLSelect,
+    currentOption,
     sampleLoader;
   
-  tempCLSelect = document.getElementById('webclDeviceSelector');
+  app.clGetter = new window.pmAudio.clAudioCtx();
   
-  app.clCtx = new window.pmAudio.clAudioCtx();
-  
-  //If WebCL is present and lists devices.
-  if (app.clCtx.clDevices) {
-    for (i = 0; i < app.clCtx.clDevices.length; i += 1) {
-      tempOption = document.createElement('option');
-      tempOption.textContent = app.clCtx.clDevices[i].name;
-      tempOption.setAttribute('value', i);
-      tempCLSelect.appendChild(tempOption);
+  if (app.clGetter.clDevices) {
+    for (i = 0; i < app.clGetter.clDevices.length; i += 1) {
+      currentOption = document.createElement('option');
+      currentOption.textContent = app.clGetter.clDevices[i].name;
+      currentOption.setAttribute('value', i);
+      app.elDeviceSelector.appendChild(currentOption);
     }
   } else {
-    document.getElementById('typeWebCL').setAttribute('disabled', 'disabled');
+    app.elWebCL.setAttribute('disabled', 'disabled');
   }
   
-  //Disable WebCL dropdown by default.
-  tempCLSelect.setAttribute('disabled', 'disabled');
-  document.getElementById('typeWebCL').removeAttribute('checked');
-  document.getElementById('typeWebAudio').setAttribute('checked', 'checked');
+  //Set "No Offloading" as default
+  app.elDeviceSelector.setAttribute('disabled', 'disabled');
+  app.elWebCL.removeAttribute('checked');
+  app.elWebAudio.setAttribute('checked', 'checked');
   
   sampleLoader = new window.AudioSampleLoader();
   sampleLoader.src = 'assets/Water-Dirt-01.ogg';
   sampleLoader.onload = function () {
-    app.rainSamples = sampleLoader.response;
-    app.setReady();
+    app.rain.samples = sampleLoader.response;
+    app.pingReady();
   };
   sampleLoader.send();
   
   app.boid = new window.boid(30);
-  app.boid.setCenter(app.map.width / 2, app.map.height / 2);
-  app.boid.setTarget(app.map.width / 2, (app.map.height / 2) - 1);
+  app.boid.setCenter(app.elMap.clientWidth / 2, app.elMap.clientHeight / 2);
+  app.boid.setTarget(app.elMap.clientWidth / 2, (app.elMap.clientHeight / 2) - 1);
   app.boid.defineBoid();
   
   app.boid.draw = function () {
-    app.drawCtx.beginPath();
-    app.drawCtx.moveTo(app.boid.points[0], app.boid.points[1]);
-    app.drawCtx.lineTo(app.boid.points[2], app.boid.points[3]);
-    app.drawCtx.lineTo(app.boid.points[4], app.boid.points[5]);
-    app.drawCtx.lineTo(app.boid.points[6], app.boid.points[7]);
-    app.drawCtx.fillStyle = '#000';
-    app.drawCtx.fill();
-
-    app.drawCtx.beginPath();
-    app.drawCtx.arc(app.boid.location.x, app.boid.location.y, 4, 0, 2 * Math.PI);
-    app.drawCtx.fillStyle = 'red';
-    app.drawCtx.fill();
+    app.boid.defineBoid();
+    
+    app.c2d.beginPath();
+    app.c2d.moveTo(app.boid.points[0], app.boid.points[1]);
+    app.c2d.lineTo(app.boid.points[2], app.boid.points[3]);
+    app.c2d.lineTo(app.boid.points[4], app.boid.points[5]);
+    app.c2d.lineTo(app.boid.points[6], app.boid.points[7]);
+    app.c2d.fillStyle = '#000';
+    app.c2d.fill();
+    
+    app.c2d.beginPath();
+    app.c2d.arc(app.boid.location.x, app.boid.location.y, 4, 0, 2 * Math.PI);
+    app.c2d.fillStyle = 'red';
+    app.c2d.fill();
   };
   
   app.firstDraw();
   window.requestAnimationFrame(app.draw);
-  
-  window.setTimeout(function () {
-    app.generateInitialParticles(app.totalParticles);
-  }, 0);
-};
-
-//region Direct User Input Stuff
-
-app.canvasLMBDown = function (e) {
-  "use strict";
-  
-  if (e.which === 1) {
-    app.boid.setCenter(app.mouse.x, app.mouse.y);
-    app.boid.bIsOrienting = true;
-  }
-};
-
-app.canvasLMBUp = function (e) {
-  "use strict";
-  
-  if (e.which === 1) {
-    app.boid.setTarget(app.mouse.x, app.mouse.y);
-    app.boid.defineBoid();
-    app.boid.bIsOrienting = false;
-  }
 };
 
 app.canvasMouseMove = function (e) {
@@ -151,26 +141,40 @@ app.canvasMouseMove = function (e) {
   app.mouse.y = e.clientY - 75;
 };
 
-//endregion
+app.canvasLMBDown = function (e) {
+  "use strict";
+  
+  if (e.which === 1) {
+    app.boid.setCenter(app.mouse.x, app.mouse.y);
+    app.boid.bIsOrienting = true;
+    app.boid.bNeedsRedraw = true;
+  }
+};
 
-//region UI Element Stuff
+app.canvasLMBUp = function (e) {
+  "use strict";
+  
+  if (e.which === 1) {
+    app.boid.bIsOrienting = false;
+  }
+};
 
 app.beginPress = function () {
   "use strict";
   
   app.bIsRunning = true;
-  app.startStop.textContent = "Stop";
-  app.startStop.onclick = app.stopPress;
+  app.elStart.textContent = 'Stop';
+  app.elStart.onclick = app.stopPress;
   
   app.lastFrame = window.performance.now();
   
-  if (app.radioCL.hasAttribute('checked')) {
-    app.clCtx.selectProcessor(document.getElementById('webclDeviceSelector').selectedIndex);
+  if (app.elWebCL.hasAttribute('checked')) {
+    app.clGetter.selectProcessor(app.elDeviceSelector.selectedIndex);
     app.getKernel();
-    app.setupKernel(512);
-    app.scriptNode = app.aCtx.createScriptProcessor(512, 2, 2);
+    app.setupKernel(app.rain.timestep);
+    app.scriptNode = app.audio.createScriptProcessor(app.rain.timestep, 2, 2);
     app.scriptNode.onaudioprocess = app.audioProcess;
-    app.scriptNode.connect(app.aCtx.destination);
+    app.scriptNode.connect(app.audio.destination);
   }
 };
 
@@ -178,33 +182,43 @@ app.stopPress = function () {
   "use strict";
   
   app.bIsRunning = false;
-  app.startStop.textContent = "Begin";
-  app.startStop.onclick = app.beginPress;
-  app.glCtx.clear(app.glCtx.COLOR_BUFFER_BIT);
-  if (app.scriptNode) {
-    app.scriptNode.disconnect();
+  app.elStart.textContent = 'Begin';
+  app.elStart.onclick = app.beginPress;
+  app.gl.clear(app.gl.COLOR_BUFFER_BIT);
+  
+  if (app.audio.clStream) {
+    app.audio.clStream.disconnect();
   }
 };
 
-app.noOffloadSelected = function () {
+app.selectNoOffload = function () {
   "use strict";
   
-  document.getElementById('webclDeviceSelector').setAttribute('disabled', 'disabled');
-  app.radioCL.removeAttribute('checked');
-  app.radioWebAudio.setAttribute('checked', 'checked');
+  app.elDeviceSelector.setAttribute('disabled', 'disabled');
+  app.elWebCL.removeAttribute('checked');
+  app.elWebAudio.setAttribute('checked', 'checked');
 };
 
-app.webCLOffloadSelected = function () {
+app.selectWebCL = function () {
   "use strict";
   
-  document.getElementById('webclDeviceSelector').removeAttribute('disabled');
-  app.radioCL.setAttribute('checked', 'checked');
-  app.radioWebAudio.removeAttribute('checked');
+  app.elDeviceSelector.removeAttribute('disabled');
+  app.elWebCL.setAttribute('checked', 'checked');
+  app.elWebAudio.removeAttribute('checked');
 };
 
-//endregion
+app.pingReady = function () {
+  "use strict";
+  
+  //Only need to wait for sample(s) load/decode to complete.
+  app.unlockBegin();
+};
 
-//region Drawing and Stuff
+app.unlockBegin = function () {
+  "use strict";
+  
+  app.elStart.removeAttribute('disabled');
+};
 
 app.firstDraw = function () {
   "use strict";
@@ -218,270 +232,109 @@ app.draw = function (timestamp) {
   
   window.requestAnimationFrame(app.draw);
   
+  //pragma region Simulating Rain
   if (app.bIsRunning) {
-    if (!app.radioCL.hasAttribute('checked')) {
-      app.simulateRain(timestamp);
+    
+    if (app.elWebAudio.hasAttribute('checked')) {
+      app.webAudioSimulateRain(timestamp);
+    } else if (app.elWebCL.hasAttribute('checked')) {
+      app.webclSimulateRain(timestamp);
     }
-    app.webGLDraw();
+    
+    app.rain.draw();
   }
+  //pragma endregion
   
-  if (app.boid.bIsOrienting) {
-    app.drawCtx.clearRect(0, 0, app.map.width, app.map.height);
+  //pragma region Animating Boids
+  if (app.boid.bNeedsRedraw) {
+    app.c2d.clearRect(0, 0, app.elBoid.width, app.elBoid.height);
     app.boid.setTarget(app.mouse.x, app.mouse.y);
     app.boid.defineBoid();
     app.boid.draw();
+    
+    //If the above redraw was the last one for this reorientation.
+    if (!app.boid.bIsOrienting) {
+      app.boid.bNeedsRedraw = false;
+    }
   }
+  //pragma endregion
   
+  //pragma region Animating Resize
   if (app.bWasResized) {
     app.bWasResized = false;
-    app.drawCtx.clearRect(0, 0, app.map.width, app.map.height);
-    app.boid.setTarget(app.mouse.x, app.mouse.y);
+    
+    app.elRain.width = app.elMap.clientWidth;
+    app.elRain.height = app.elMap.clientHeight;
+    app.gl.viewport(0, 0, app.elRain.width, app.elRain.height);
+    app.elBoid.width = app.elMap.clientwidth;
+    app.elBoid.height = app.elMap.cleintHeight;
+    
+    app.c2d.clearRect(0, 0, app.elMap.width, app.elMap.height);
+    app.boid.setCenter(app.elMap.width / 2, app.elMap.height / 2);
+    app.boid.setTarget(app.elMap.width / 2, (app.elMap.height / 2) - 1);
     app.boid.defineBoid();
     app.boid.draw();
   }
+  //pragma endregion
   
   app.lastFrame = timestamp;
-};
-
-app.simulateRain = function (timestamp) {
-  "use strict";
-  var i,
-    j,
-    deltaTime,
-    webcl;
-  
-  webcl = app.radioCL.hasAttribute('checked');
-  
-  for (i = 0; i < 3 * app.totalParticles; i += 3) {
-    deltaTime = timestamp - app.lastFrame;
-    
-    app.pview[i + 2] -= (deltaTime / app.decay);
-    
-    //If particle is past decay, spawn a new one at a random location.
-    //
-    //New particles will have Z value of 1, which we can look for as
-    //a trigger to spawn audio elsewhere.
-    if (app.pview[i + 2] <= 0) {
-      app.pview[i] = Math.random();
-      app.pview[i + 1] = Math.random();
-      app.pview[i + 2] = 1;
-    }
-    
-    j = ((i / 3) * 2);
-    
-    if (webcl) {
-      app.intView[j] = 0; //Just one sound sample so far.
-      app.intView[j + 1] = app.intView[j + 1] - app.numSamples;
-    }
-  }
-  
-  if (app.radioWebAudio.getAttribute('checked') === 'checked') {
-    app.noOffloadAddSounds();
-  }
 };
 
 app.generateInitialParticles = function (number) {
   "use strict";
   var i;
   
-  //Data Type AOS: {X, Y, Life}
-  //X -> 32bit (4 bytes)
-  //Y -> 32bit (4 bytes)
-  //Life -> 32bit (4 bytes)
-  //12 bytes per structure
-  app.particles = new window.ArrayBuffer(number * 12);
-  app.pview = new window.Float32Array(app.particles);
-  app.totalParticles = number;
+  app.rain.max = number;
   
-  for (i = 0; i < (3 * number); i += 3) {
-    app.pview[i] = Math.random();
-    app.pview[i + 1] = Math.random();
-    app.pview[i + 2] = Math.random();
-  }
+  //Web Audio: AOS: {float x, float y, float life}
+  //WebCL: AOS: {float x, float y, int32 sampleStart, int32 sampleEd, int32 samplePosition}
+    
+  app.rain.webAudioCalls = new window.ArrayBuffer(number * 12);
+  app.rain.webclCalls = new window.ArrayBuffer(number * 20);
   
-  app.setReady();
-};
-
-app.setReady = function () {
-  "use strict";
+  app.rain.webAudioView = new window.Float32Array(app.rain.webAudioCalls);
   
-  app.numReady += 1;
-  
-  if (app.numReady === app.totalReady) {
-    app.whenReady();
+  for (i = 0; i < 3 * app.rain.max; i += 1) {
+    app.rain.webAudioView[i] = Math.random();
   }
 };
 
-app.whenReady = function () {
+app.webAudioSimulateRain = function (timestamp) {
   "use strict";
+  var i,
+    deltaTime;
   
-  app.webGLPrepare();
-  app.startStop.removeAttribute('disabled');
+  deltaTime = timestamp - app.lastFrame;
+  for (i = 0; i < 3 * app.rain.max; i += 3) {
+    
+    app.rain.webAudioView[i + 2] -= (deltaTime / app.rain.decay);
+    
+    if (app.rain.webAudioView[i + 2] <= 0) {
+      app.rain.webAudioView[i] = Math.random();
+      app.rain.webAudioView[i + 1] = Math.random();
+      app.rain.webAudioView[i + 2] = 1;
+    }
+  }
 };
 
-app.webGLPrepare = function () {
-  "use strict";
-  var fs,
-    vs;
-  
-  vs = window.getShader(app.glCtx, 'vtxRainPoints');
-  fs = window.getShader(app.glCtx, 'pxRainPoints');
-  
-  app.shaderProgram = app.glCtx.createProgram();
-  app.glCtx.attachShader(app.shaderProgram, vs);
-  app.glCtx.attachShader(app.shaderProgram, fs);
-  app.glCtx.linkProgram(app.shaderProgram);
-  
-  app.glCtx.useProgram(app.shaderProgram);
-  
-  app.vtxPositionAttribute = app.glCtx.getAttribLocation(app.shaderProgram, 'points');
-  app.glCtx.enableVertexAttribArray(app.vtxPositionAttribute);
-  
-  app.vtxRainBuffer = app.glCtx.createBuffer();
-  app.glCtx.bindBuffer(app.glCtx.ARRAY_BUFFER, app.vtxRainBuffer);
-  app.glCtx.bufferData(app.glCtx.ARRAY_BUFFER, app.pview, app.glCtx.STATIC_DRAW);
-};
-
-app.webGLDraw = function () {
+app.rain.draw = function () {
   "use strict";
   
-  app.glCtx.clear(app.glCtx.COLOR_BUFFER_BIT);
-  app.glCtx.bindBuffer(app.glCtx.ARRAY_BUFFER, app.vtxRainBuffer);
-  app.glCtx.bufferData(app.glCtx.ARRAY_BUFFER, app.pview, app.glCtx.STATIC_DRAW);
-  app.glCtx.vertexAttribPointer(app.vtxPositionAttribute, 3, app.glCtx.FLOAT, false, 0, 0);
-  app.glCtx.drawArrays(app.glCtx.POINTS, 0, app.totalParticles);
+  app.gl.clear(app.gl.COLOR_BUFFER_BIT);
+  app.gl.bindBuffer(app.gl.ARRAY_BUFFER, app.vtxRainBuffer);
+  app.gl.bufferData(app.gl.ARRAY_BUFFER, app.rain.webAudioView, app.gl.STATIC_DRAW);
+  app.gl.vertexAttribPointer(app.vtxPositionAttribute, 3, app.gl.FLOAT, false, 0, 0);
+  app.gl.drawArrays(app.gl.POINTS, 0, app.rain.max);
 };
 
 app.resize = function () {
   "use strict";
   
-  app.map.width = document.getElementById('main').clientWidth;
-  app.map.height = document.getElementById('main').clientHeight;
-  app.boid.setCenter(app.map.width / 2, app.map.height / 2);
-  app.boid.setTarget(app.map.width / 2, (app.map.height / 2) - 1);
-  app.boid.defineBoid();
-    
-  app.glPoints.width = app.map.width;
-  app.glPoints.height = app.map.height;
-  app.glCtx.viewport(0, 0, app.glPoints.width, app.glPoints.height);
-  
   app.bWasResized = true;
 };
 
-//endregion
-
-//region WebAudio Processing
-
-app.noOffloadAddSounds = function () {
-  "use strict";
-  var i,
-    src,
-    panner,
-    gain,
-    location;
-  
-  app.aListener.setPosition(app.boid.location.x / app.map.width, app.boid.location.y / app.map.height, 0);
-  app.aListener.setOrientation(-app.boid.direction.x, -app.boid.direction.y, 0, 0, 0, 1);
-  
-  for (i = 0; i < 3 * app.totalParticles; i += 3) {
-    if (app.pview[i + 2] === 1) {
-      src = app.aCtx.createBufferSource();
-      
-      //They all pull from the same sample currently.
-      src.buffer = app.rainSamples;
-      
-      panner = app.aCtx.createPanner();
-      panner.setPosition(app.pview[i], app.pview[i + 1], 0);
-      src.connect(panner);
-      panner.connect(app.aCtx.destination);
-      src.start(0);
-    }
-  }
-};
-
-//endregion
-
-//region WebCL Audio Processing
-app.getKernel = function () {
-  "use strict";
-  
-  app.clCtx.kernelSrc = document.getElementById('clMixSamples').text;
-};
-
-app.setupKernel = function (numSamples) {
-  "use strict";
-  
-  app.numSamples = numSamples;
-  
-  //First entry is sampleOffset, second entry is position along.
-  app.intView = new window.Int32Array(numSamples * 2);
-  
-  app.bufParticles = app.clCtx.clCtx.createBuffer(window.WebCL.MEM_READ_ONLY, app.particles.byteLength);
-  app.bufOutput = app.clCtx.clCtx.createBuffer(window.WebCL.MEM_WRITE_ONLY, 8 * numSamples);
-  app.bufSoundCues = app.clCtx.clCtx.createBuffer(window.WebCL.MEM_READ_ONLY, app.rainSamples.getChannelData(0).byteLength);
-  app.clProgram = app.clCtx.clCtx.createProgram(app.clCtx.kernelSrc);
-  app.device = app.clCtx.clCtx.getInfo(window.WebCL.CONTEXT_DEVICES)[0];
-  app.clProgram.build([app.device], "");
-  app.kernel = app.clProgram.createKernel("clMixSamples");
-  app.kernel.setArg(0, app.bufParticles);
-  app.kernel.setArg(1, app.bufOutput);
-  app.kernel.setArg(2, app.bufSoundCues);
-  app.kernel.setArg(3, new window.Float32Array([(app.boid.location.x / app.map.width), (app.boid.location.y / app.map.height)]));
-  app.kernel.setArg(4, new window.Float32Array([app.boid.direction.x, app.boid.direction.y]));
-};
-
-app.useKernel = function () {
-  "use strict";
-  var cmdQueue,
-    output;
-  
-  app.simulateRain(window.performance.now());
-  
-  app.kernel.setArg(3, new window.Float32Array([(app.boid.location.x / app.map.width), (app.boid.location.y / app.map.height)]));
-  app.kernel.setArg(4, new window.Float32Array([app.boid.direction.x, app.boid.direction.y]));
-  
-  cmdQueue = app.clCtx.clCtx.createCommandQueue(app.device);
-  cmdQueue.enqueueWriteBuffer(app.bufVtx, false, 0, app.particles.byteLength, app.pview);
-  cmdQueue.enqueueWriteBuffer(app.bufSounds, false, 0, app.rainSamples.getChannelData(0).byteLength, app.rainSamples.getChannelData(0));
-  
-  cmdQueue.enqueueNDRangeKernel(app.kernel, 1, null, [app.numSamples]);
-  
-  output = new window.Float32Array(app.numSamples * 2);
-  cmdQueue.enqueueReadBuffer(app.bufDst, false, 0, app.numSamples * 8, output);
-  
-  return output;
-};
-
-app.audioProcess = function (e) {
-  "use strict";
-  var inputBuffer,
-    outputBuffer,
-    response,
-    outputLeft,
-    outputRight,
-    i;
-  
-  inputBuffer = e.inputBuffer;
-  outputBuffer = e.outputBuffer;
-  
-  response = app.useKernel();
-  app.testresponse = response;
-  
-  outputLeft = outputBuffer.getChannelData(0);
-  outputRight = outputBuffer.getChannelData(1);
-  
-  for (i = 0; i < 2 * app.numSamples; i += 2) {
-    outputLeft[i] = response[i];
-    outputRight[i] = response[i + 1];
-  }
-  app.testbuffer = outputBuffer;
-  
-  
-};
-//endregion
-
 //region Window Event Listeners
 window.addEventListener('DOMContentLoaded', app.init, false);
-window.addEventListener('load', app.start, false);
+window.addEventListener('load', app.load, false);
 window.addEventListener('resize', app.resize, false);
 //endregion

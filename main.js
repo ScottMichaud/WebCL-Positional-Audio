@@ -288,7 +288,7 @@ app.generateInitialParticles = function (number) {
   app.rain.max = number;
   
   //Web Audio: AOS: {float x, float y, float life}
-  //WebCL: AOS: {float x, float y, int32 sampleStart, int32 sampleEd, int32 samplePosition}
+  //WebCL: AOS: {float x, float y, int32 sampleStart, int32 sampleEnd, int32 samplePosition}
     
   app.rain.webAudioCalls = new window.ArrayBuffer(number * 12);
   app.rain.webclCalls = new window.ArrayBuffer(number * 20);
@@ -307,9 +307,28 @@ app.webAudioSimulateRain = function (timestamp) {
   
   deltaTime = timestamp - app.lastFrame;
   for (i = 0; i < 3 * app.rain.max; i += 3) {
-    
     app.rain.webAudioView[i + 2] -= (deltaTime / app.rain.decay);
     
+    //Triggers a new sound call.
+    if (app.rain.webAudioView[i + 2] <= 0) {
+      app.rain.webAudioView[i] = Math.random();
+      app.rain.webAudioView[i + 1] = Math.random();
+      app.rain.webAudioView[i + 2] = 1;
+    }
+  }
+};
+
+app.webclSimulateRain = function (timestamp) {
+  "use strict";
+  var i,
+    deltaTime;
+  
+  deltaTime = timestamp - app.lastFrame;
+  
+  for (i = 0; i < 3 * app.rain.max; i += 3) {
+    app.rain.webAudioView[i + 2] -= (deltaTime / app.rain.decay);
+    
+    //Triggers a new sound call.
     if (app.rain.webAudioView[i + 2] <= 0) {
       app.rain.webAudioView[i] = Math.random();
       app.rain.webAudioView[i + 1] = Math.random();

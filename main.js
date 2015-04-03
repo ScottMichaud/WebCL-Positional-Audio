@@ -25,7 +25,7 @@ app.init = function () {
   app.bIsRunning = false;
   
   app.rain.max = 50;
-  app.rain.decay = 300; //Milliseconds
+  app.rain.decay = 500; //Milliseconds
   app.rain.timestep = 512; //Not relevant for WebAudio, just offloading.
   
   app.elMap = document.getElementById('main'); //Container for various canvas layers.
@@ -303,7 +303,19 @@ app.generateInitialParticles = function (number) {
 app.webAudioSimulateRain = function (timestamp) {
   "use strict";
   var i,
-    deltaTime;
+    deltaTime,
+    audioTime,
+    srcNode,
+    pannerNode;
+  
+  //audioTime = app.audio.currentTime;
+  //app.audio.listener.setPosition(app.boid.location.x / app.elBoid.width,
+                                 app.boid.location.y / app.elBoid.height,
+                                 0);
+  //app.audio.listener.setOrientation(-app.boid.direction.x,
+                                    -app.boid.direction.y,
+                                    0,
+                                    0, 0, 1);
   
   deltaTime = timestamp - app.lastFrame;
   for (i = 0; i < 3 * app.rain.max; i += 3) {
@@ -314,6 +326,17 @@ app.webAudioSimulateRain = function (timestamp) {
       app.rain.webAudioView[i] = Math.random();
       app.rain.webAudioView[i + 1] = Math.random();
       app.rain.webAudioView[i + 2] = 1;
+      
+      //srcNode = app.audio.createBufferSource();
+      //srcNode.buffer = app.rain.samples;
+      //pannerNode = app.audio.createPanner();
+      //pannerNode.panningModel = 'equalpower';
+      //pannerNode.setPosition(app.rain.webAudioView[i],
+                             //app.rain.webAudioView[i + 1],
+                             //0);
+      //srcNode.connect(pannerNode);
+      //pannerNode.connect(app.audio.destination);
+      //srcNode.start(audioTime + (0.03 * Math.random()));
     }
   }
 };

@@ -310,12 +310,12 @@ app.webAudioSimulateRain = function (timestamp) {
   
   //audioTime = app.audio.currentTime;
   //app.audio.listener.setPosition(app.boid.location.x / app.elBoid.width,
-                                 app.boid.location.y / app.elBoid.height,
-                                 0);
+                                 //app.boid.location.y / app.elBoid.height,
+                                 //0);
   //app.audio.listener.setOrientation(-app.boid.direction.x,
-                                    -app.boid.direction.y,
-                                    0,
-                                    0, 0, 1);
+                                    //-app.boid.direction.y,
+                                    //0,
+                                    //0, 0, 1);
   
   deltaTime = timestamp - app.lastFrame;
   for (i = 0; i < 3 * app.rain.max; i += 3) {

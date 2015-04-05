@@ -323,14 +323,14 @@ app.webAudioSimulateRain = function (timestamp) {
     srcNode,
     pannerNode;
   
-  //audioTime = app.audio.currentTime;
-  //app.audio.listener.setPosition(app.boid.location.x / app.elBoid.width,
-                                 //app.boid.location.y / app.elBoid.height,
-                                 //0);
-  //app.audio.listener.setOrientation(-app.boid.direction.x,
-                                    //-app.boid.direction.y,
-                                    //0,
-                                    //0, 0, 1);
+  audioTime = app.audio.currentTime;
+  app.audio.listener.setPosition(app.boid.location.x / app.elBoid.width,
+                                 app.boid.location.y / app.elBoid.height,
+                                 0);
+  app.audio.listener.setOrientation(-app.boid.direction.x,
+                                    -app.boid.direction.y,
+                                    0,
+                                    0, 0, 1);
   
   deltaTime = timestamp - app.lastFrame;
   for (i = 0; i < 3 * app.rain.max; i += 3) {
@@ -342,16 +342,16 @@ app.webAudioSimulateRain = function (timestamp) {
       app.rain.webAudioView[i + 1] = Math.random();
       app.rain.webAudioView[i + 2] = 1;
       
-      //srcNode = app.audio.createBufferSource();
-      //srcNode.buffer = app.rain.samples;
-      //pannerNode = app.audio.createPanner();
-      //pannerNode.panningModel = 'equalpower';
-      //pannerNode.setPosition(app.rain.webAudioView[i],
-                             //app.rain.webAudioView[i + 1],
-                             //0);
-      //srcNode.connect(pannerNode);
-      //pannerNode.connect(app.audio.destination);
-      //srcNode.start(audioTime + (0.03 * Math.random()));
+      srcNode = app.audio.createBufferSource();
+      srcNode.buffer = app.rain.samples;
+      pannerNode = app.audio.createPanner();
+      pannerNode.panningModel = 'equalpower';
+      pannerNode.setPosition(app.rain.webAudioView[i],
+                             app.rain.webAudioView[i + 1],
+                             0);
+      srcNode.connect(pannerNode);
+      pannerNode.connect(app.audio.destination);
+      srcNode.start(audioTime + (0.03 * Math.random()));
     }
   }
 };

@@ -73,7 +73,6 @@ app.init = function () {
   app.elMap.addEventListener('mousemove', app.canvasMouseMove, false);
   
   app.audio = new window.AudioContext();
-  app.generateInitialParticles(app.rain.max);
 };
 
 app.load = function () {
@@ -167,6 +166,7 @@ app.beginPress = function () {
   app.elStart.onclick = app.stopPress;
   
   app.lastFrame = window.performance.now();
+  app.generateInitialParticles(app.rain.max);
   
   if (app.elWebCL.hasAttribute('checked')) {
     app.clGetter.selectProcessor(app.elDeviceSelector.selectedIndex);
@@ -283,7 +283,9 @@ app.draw = function (timestamp) {
 
 app.generateInitialParticles = function (number) {
   "use strict";
-  var i;
+  var i,
+    cueSamples,
+    cuePosition;
   
   app.rain.max = number;
   
@@ -294,9 +296,22 @@ app.generateInitialParticles = function (number) {
   app.rain.webclCalls = new window.ArrayBuffer(number * 20);
   
   app.rain.webAudioView = new window.Float32Array(app.rain.webAudioCalls);
+  app.rain.webclFloatView = new window.Float32Array(app.rain.webclCalls);
+  app.rain.webclIntView = new window.Int32Array(app.rain.webclCalls);
+  
+  cueSamples = app.rain.samples.length;
   
   for (i = 0; i < 3 * app.rain.max; i += 1) {
     app.rain.webAudioView[i] = Math.random();
+  }
+  
+  for (i = 0; i < app.rain.max; i += 1) {
+    app.rain.webclFloatView[5 * i] = app.rain.webAudioView[3 * i];
+    app.rain.webclFloatView[5 * i + 1] = app.rain.webAudioView[3 * i + 1];
+    app.rain.webclIntView[5 * i + 2] = 0; //TODO: Account for multiple samples
+    app.rain.webclIntView[5 * i + 3] = cueSamples;
+    cuePosition = app.rain.webAudioView[3 * i + 2] * Math.round(44100 * app.rain.decay / 1000);
+    app.rain.webclIntView[5 * i + 4] = cuePosition;
   }
 };
 

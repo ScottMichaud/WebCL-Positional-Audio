@@ -374,6 +374,19 @@ app.webclSimulateRain = function (timestamp) {
       app.rain.webAudioView[i + 2] = 1;
     }
   }
+  
+  for (i = 0; i < app.rain.max; i += 1) {
+    if (app.rain.webAudioView[3 * i + 2] === 1) {
+      app.rain.webclFloatView[5 * i] = app.rain.webAudioView[3 * i];
+      app.rain.webclFloatView[5 * i + 1] = app.rain.webAudioView[3 * i + 1];
+      //Set the current sample to the start.
+      app.rain.webclIntView[5 * i + 4] = app.rain.webclIntView[5 * i + 2];
+      //TODO: Adjust sampleStart (5i + 2) and sampleEnd (5i + 3) for new sound cue, if multiple.
+    } else {
+      //If no new particle, increment by number of samples done in last batch.
+      app.rain.webclIntView[5 * i + 4] += app.rain.timestep;
+    }
+  }
 };
 
 app.rain.draw = function () {

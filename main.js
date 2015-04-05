@@ -25,8 +25,8 @@ app.init = function () {
   app.bIsRunning = false;
   
   app.rain.max = 50;
-  app.rain.decayMin = 300; //Milliseconds
-  app.rain.decayMax = 600;
+  app.rain.decay = 500; //Milliseconds
+  app.rain.probability = 1 / ((app.rain.decay / 1000) * 60);
   app.rain.timestep = 512; //Not relevant for WebAudio, just offloading.
   
   app.elMap = document.getElementById('main'); //Container for various canvas layers.
@@ -311,7 +311,7 @@ app.generateInitialParticles = function (number) {
     app.rain.webclFloatView[5 * i + 1] = app.rain.webAudioView[3 * i + 1];
     app.rain.webclIntView[5 * i + 2] = 0; //TODO: Account for multiple samples
     app.rain.webclIntView[5 * i + 3] = cueSamples;
-    cuePosition = app.rain.webAudioView[3 * i + 2] * Math.round(44100 * app.rain.decayMin / 1000);
+    cuePosition = app.rain.webAudioView[3 * i + 2] * Math.round(44100 * app.rain.decay / 1000);
     app.rain.webclIntView[5 * i + 4] = cuePosition;
   }
 };
@@ -335,10 +335,10 @@ app.webAudioSimulateRain = function (timestamp) {
   
   deltaTime = timestamp - app.lastFrame;
   for (i = 0; i < 3 * app.rain.max; i += 3) {
-    app.rain.webAudioView[i + 2] -= (deltaTime / app.math.randomRange(app.rain.decayMin, app.rain.decayMax));
+    app.rain.webAudioView[i + 2] -= deltaTime / app.rain.decay;
     
     //Triggers a new sound call.
-    if (app.rain.webAudioView[i + 2] <= 0) {
+    if (app.rain.webAudioView[i + 2] <= 0 && app.rain.probability > Math.random()) {
       app.rain.webAudioView[i] = Math.random();
       app.rain.webAudioView[i + 1] = Math.random();
       app.rain.webAudioView[i + 2] = 1;
@@ -365,10 +365,10 @@ app.webclSimulateRain = function (timestamp) {
   deltaTime = timestamp - app.lastFrame;
   
   for (i = 0; i < 3 * app.rain.max; i += 3) {
-    app.rain.webAudioView[i + 2] -= (deltaTime / app.math.randomRange(app.rain.decayMin, app.rain.decayMax));
+    app.rain.webAudioView[i + 2] -= deltaTime / app.rain.decay;
     
     //Triggers a new sound call.
-    if (app.rain.webAudioView[i + 2] <= 0) {
+    if (app.rain.webAudioView[i + 2] <= 0 && app.rain.probability > Math.random()) {
       app.rain.webAudioView[i] = Math.random();
       app.rain.webAudioView[i + 1] = Math.random();
       app.rain.webAudioView[i + 2] = 1;
@@ -376,6 +376,8 @@ app.webclSimulateRain = function (timestamp) {
   }
   
   for (i = 0; i < app.rain.max; i += 1) {
+    //If "life" has been reset: start a new sound.
+    //Else: Keep simulating current one.
     if (app.rain.webAudioView[3 * i + 2] === 1) {
       app.rain.webclFloatView[5 * i] = app.rain.webAudioView[3 * i];
       app.rain.webclFloatView[5 * i + 1] = app.rain.webAudioView[3 * i + 1];

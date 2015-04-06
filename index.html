@@ -58,64 +58,69 @@
                              __global float2* output,
                              __global float* soundCues,
                              float2 obsLocation,
-                             float2 obsDirection)
+                             float2 obsDirection,
+                             uint numParticles,
+                             uint numOutput)
   {
-      //dst is float2 because it's stereo.
+      //output is float2 because it's stereo.
+      //numOutput is the number of samples in ONE channel of the resulting
+      //stream. Thus, because this is stereo, mentally double.
 
       int i = get_global_id(0); //Sample number
-
-      //Life (vtx.s2) is 1 through 0, which is 500ms.
-      //That is how far through the sounds array (plus offset if we'd have more
-      //than a single sample) we need to pick from.
-      //Don't need to synchronize with WebAudio clock.
-
-      float2 output = (float2)(0.0f, 0.0f);
-      float2 obs_right = (float2)(-obs_dir.y, obs_dir.x);
-
-      for (int itr=0; itr < numVtx; itr++)
+      if (i >= numOutput)
       {
-          //Assuming 44.1KHz Sample Rate and half-second life
-          //Get entry number of source audio buffer array
-          int src_pos = (int)(vtx[itr].life * 22050.0f);
-          src_pos = 22050 - src_pos;
-          
-          float src_sample = 0.0f;
-          
-          if (src_pos < (numSamples + i))
-          {
-            //Get the sample of that index
-            src_sample = sounds[src_pos + i];
-            //src_sample = clamp(src_sample, -1.0f, 1.0f);
-          }
-          else
-          {
-            src_sample = 0.0f;
-          }
-
-          //Account for inverse-square falloff
-          float2 src_loc = (float2)(vtx[itr].x, vtx[itr].y);
-          float falloff = distance(obs_loc, src_loc);
-          falloff = falloff * falloff;
-
-          //Account for stereo
-          float2 dir = src_loc - obs_loc;
-
-          //Get value in right direction. 1 for full-right, 0 for full-left
-          float r_balance = dot(dir, obs_right);
-          r_balance += 1.0f;
-          r_balance = r_balance * 0.5f;
-          float r_src = src_sample * r_balance;
-          output.y += (r_src / falloff);
-
-          //Get value in left direction. 0 for full-right, 1 for full-left
-          float l_balance = dot(dir, -obs_right);
-          l_balance += 1.0f;
-          l_balance = l_balance * 0.5f;
-          float l_src = src_sample * l_balance;
-          output.x += (l_src / falloff);
+          return;
       }
 
-      dst[i] = 60.f * output;
+      float2 OutputValue = (float2)(0.0f, 0.0f);
+      float2 obsRight = (float2)(-obsDirection.y, obsDirection.x);
+      //It's normalized in boid.js, but what's one op among friends?
+      obsRight = normalize(obsRight);
+      float2 CurrentDirection = (float2)(0.0f, 0.0f);
+      int CurrentPosition = 0;
+      float CurrentSample = 0.0f;
+      float SourceDistance = 0.0f;
+      float CurrentGain = 0.0f;
+      float CurrentLeft = 0.0f;
+      float CurrentRight = 0.0f;
+      
+      for (int itr=0; itr < numParticles; itr++)
+      {
+          CurrentPosition = particles[itr].samplePosition + i;
+          
+          if ((CurrentPosition < particles[itr].sampleStart) ||
+              (CurrentPosition >= particles[itr].sampleEnd))
+          {
+              //We're Out of Bounds for the sample. No effect. 
+              continue;
+          }
+           
+          CurrentSample = soundCues[CurrentPosition];
+          
+          SourceDistance = distance(obsLocation, particles[itr].pos);
+          SourceDistance = clamp(SourceDistance, 50.f, 1000.f);
+          CurrentGain = 50.f / SourceDistance;
+          
+          CurrentDirection = particles[itr].pos - obsLocation;
+          CurrentDirection = normalize(CurrentDirection);
+          
+          CurrentLeft = dot(CurrentDirection, -obsRight);
+          CurrentLeft += 1.0f;
+          CurrentLeft *= 0.5f;
+          CurrentLeft *= CurrentSample;
+          CurrentLeft *= CurrentGain;
+          
+          CurrentRight = dot(CurrentDirection, obsRight);
+          CurrentRight += 1.0f;
+          CurrentRight *= 0.5f;
+          CurrentRight *= CurrentSample;
+          CurrentRight *= CurrentGain;
+          
+          OutputValue.x += CurrentLeft;
+          OutputValue.y += CurrentRight;
+      }
+      
+      output[i] = OutputValue;
   }
   </script>
 </head>

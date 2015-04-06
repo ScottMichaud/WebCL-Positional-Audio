@@ -28,6 +28,7 @@ app.init = function () {
   app.rain.decay = 500; //Milliseconds
   app.rain.probability = 1 / ((app.rain.decay / 1000) * 60);
   app.rain.timestep = 512; //Not relevant for WebAudio, just WebCL.
+  app.webclDistanceScale = 1000;
   
   app.elMap = document.getElementById('main'); //Container for various canvas layers.
   
@@ -307,8 +308,8 @@ app.generateInitialParticles = function (number) {
   }
   
   for (i = 0; i < app.rain.max; i += 1) {
-    app.rain.webclFloatView[5 * i] = app.rain.webAudioView[3 * i];
-    app.rain.webclFloatView[5 * i + 1] = app.rain.webAudioView[3 * i + 1];
+    app.rain.webclFloatView[5 * i] = app.rain.webAudioView[3 * i] * app.webclDistanceScale;
+    app.rain.webclFloatView[5 * i + 1] = app.rain.webAudioView[3 * i + 1] * app.webclDistanceScale;
     app.rain.webclIntView[5 * i + 2] = 0; //TODO: Account for multiple samples
     app.rain.webclIntView[5 * i + 3] = cueSamples;
     cuePosition = app.rain.webAudioView[3 * i + 2] * Math.round(44100 * app.rain.decay / 1000);
@@ -379,8 +380,8 @@ app.webclSimulateRain = function (timestamp) {
     //If "life" has been reset: start a new sound.
     //Else: Keep simulating current one.
     if (app.rain.webAudioView[3 * i + 2] === 1) {
-      app.rain.webclFloatView[5 * i] = app.rain.webAudioView[3 * i];
-      app.rain.webclFloatView[5 * i + 1] = app.rain.webAudioView[3 * i + 1];
+      app.rain.webclFloatView[5 * i] = app.rain.webAudioView[3 * i] * app.webclDistanceScale;
+      app.rain.webclFloatView[5 * i + 1] = app.rain.webAudioView[3 * i + 1] * app.webclDistanceScale;
       //Set the current sample to the start.
       app.rain.webclIntView[5 * i + 4] = app.rain.webclIntView[5 * i + 2];
       //TODO: Adjust sampleStart (5i + 2) and sampleEnd (5i + 3) for new sound cue, if multiple.

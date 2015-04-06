@@ -27,7 +27,7 @@ app.init = function () {
   app.rain.max = 50;
   app.rain.decay = 500; //Milliseconds
   app.rain.probability = 1 / ((app.rain.decay / 1000) * 60);
-  app.rain.timestep = 512; //Not relevant for WebAudio, just offloading.
+  app.rain.timestep = 512; //Not relevant for WebAudio, just WebCL.
   
   app.elMap = document.getElementById('main'); //Container for various canvas layers.
   

@@ -358,7 +358,27 @@ app.webAudioSimulateRain = function (timestamp) {
   }
 };
 
-app.webclSimulateRain = function (timestamp) {
+app.webclSimulateRainAudio = function () {
+  "use strict";
+  var i;
+  
+  for (i = 0; i < app.rain.max; i += 1) {
+    //If "life" has been reset: start a new sound.
+    //Else: Keep simulating current one.
+    if (app.rain.webAudioView[3 * i + 2] === 1) {
+      app.rain.webclFloatView[5 * i] = app.rain.webAudioView[3 * i] * app.webclDistanceScale;
+      app.rain.webclFloatView[5 * i + 1] = app.rain.webAudioView[3 * i + 1] * app.webclDistanceScale;
+      //Set the current sample to the start.
+      app.rain.webclIntView[5 * i + 4] = app.rain.webclIntView[5 * i + 2];
+      //TODO: Adjust sampleStart (5i + 2) and sampleEnd (5i + 3) for new sound cue, if multiple.
+    } else {
+      //If no new particle, increment by number of samples done in last batch.
+      app.rain.webclIntView[5 * i + 4] += app.rain.timestep;
+    }
+  }
+};
+
+app.webclSimulateRainVideo = function (timestamp) {
   "use strict";
   var i,
     deltaTime;
@@ -373,21 +393,6 @@ app.webclSimulateRain = function (timestamp) {
       app.rain.webAudioView[i] = Math.random();
       app.rain.webAudioView[i + 1] = Math.random();
       app.rain.webAudioView[i + 2] = 1;
-    }
-  }
-  
-  for (i = 0; i < app.rain.max; i += 1) {
-    //If "life" has been reset: start a new sound.
-    //Else: Keep simulating current one.
-    if (app.rain.webAudioView[3 * i + 2] === 1) {
-      app.rain.webclFloatView[5 * i] = app.rain.webAudioView[3 * i] * app.webclDistanceScale;
-      app.rain.webclFloatView[5 * i + 1] = app.rain.webAudioView[3 * i + 1] * app.webclDistanceScale;
-      //Set the current sample to the start.
-      app.rain.webclIntView[5 * i + 4] = app.rain.webclIntView[5 * i + 2];
-      //TODO: Adjust sampleStart (5i + 2) and sampleEnd (5i + 3) for new sound cue, if multiple.
-    } else {
-      //If no new particle, increment by number of samples done in last batch.
-      app.rain.webclIntView[5 * i + 4] += app.rain.timestep;
     }
   }
 };
@@ -406,6 +411,17 @@ app.resize = function () {
   "use strict";
   
   app.bWasResized = true;
+};
+
+app.getKernel = function () {
+  "use strict";
+  
+  app.kernelSrc = document.getElementById('clMixSamples').text;
+};
+
+app.setupKernel = function () {
+  "use strict";
+  
 };
 
 //region Window Event Listeners

@@ -173,9 +173,9 @@ app.beginPress = function () {
   if (app.elWebCL.hasAttribute('checked')) {
     app.clGetter.selectProcessor(app.elDeviceSelector.selectedIndex);
     app.getKernel();
-    app.setupKernel(app.rain.timestep);
+    app.setupKernel();
     app.scriptNode = app.audio.createScriptProcessor(app.rain.timestep, 2, 2);
-    app.scriptNode.onaudioprocess = app.audioProcess;
+    app.scriptNode.onaudioprocess = app.webclSimulateRainAudio;
     app.scriptNode.connect(app.audio.destination);
   }
 };
@@ -188,8 +188,8 @@ app.stopPress = function () {
   app.elStart.onclick = app.beginPress;
   app.gl.clear(app.gl.COLOR_BUFFER_BIT);
   
-  if (app.audio.clStream) {
-    app.audio.clStream.disconnect();
+  if (app.scriptNode) {
+    app.scriptNode.disconnect();
   }
 };
 
@@ -240,7 +240,7 @@ app.draw = function (timestamp) {
     if (app.elWebAudio.hasAttribute('checked')) {
       app.webAudioSimulateRain(timestamp);
     } else if (app.elWebCL.hasAttribute('checked')) {
-      app.webclSimulateRain(timestamp);
+      app.webclSimulateRainVideo(timestamp);
     }
     
     app.rain.draw();
@@ -293,13 +293,17 @@ app.generateInitialParticles = function (number) {
   
   //Web Audio: AOS: {float x, float y, float life}
   //WebCL: AOS: {float x, float y, int32 sampleStart, int32 sampleEnd, int32 samplePosition}
+  //CHANGE: Now two: {float x, float y} & {int32 sampleStart, int32 sampleEnd, int32 samplePosition}
+  //Structures are not allowed in kernel params for WebCL.
     
   app.rain.webAudioCalls = new window.ArrayBuffer(number * 12);
-  app.rain.webclCalls = new window.ArrayBuffer(number * 20);
+  app.rain.webclCallsFloat = new window.ArrayBuffer(number * 8);
+  app.rain.webclCallsInt = new window.ArrayBuffer(number * 12);
   
   app.rain.webAudioView = new window.Float32Array(app.rain.webAudioCalls);
-  app.rain.webclFloatView = new window.Float32Array(app.rain.webclCalls);
-  app.rain.webclIntView = new window.Int32Array(app.rain.webclCalls);
+  
+  app.rain.webclFloatView = new window.Float32Array(app.rain.webclCallsFloat);
+  app.rain.webclIntView = new window.Int32Array(app.rain.webclCallsInt);
   
   cueSamples = app.rain.samples.length;
   
@@ -307,13 +311,15 @@ app.generateInitialParticles = function (number) {
     app.rain.webAudioView[i] = Math.random();
   }
   
+  //Replacement for below.
   for (i = 0; i < app.rain.max; i += 1) {
-    app.rain.webclFloatView[5 * i] = app.rain.webAudioView[3 * i] * app.webclDistanceScale;
-    app.rain.webclFloatView[5 * i + 1] = app.rain.webAudioView[3 * i + 1] * app.webclDistanceScale;
-    app.rain.webclIntView[5 * i + 2] = 0; //TODO: Account for multiple samples
-    app.rain.webclIntView[5 * i + 3] = cueSamples;
+    app.rain.webclFloatView[2 * i] = app.rain.webAudioView[3 * i] * app.webclDistanceScale;
+    app.rain.webclFloatView[2 * i + 1] = app.rain.webAudioView[3 * i + 1] * app.webclDistanceScale;
+    
+    app.rain.webclIntView[3 * i] = 0; //TODO: Multiple Samples
+    app.rain.webclIntView[3 * i + 1] = cueSamples;
     cuePosition = app.rain.webAudioView[3 * i + 2] * Math.round(44100 * app.rain.decay / 1000);
-    app.rain.webclIntView[5 * i + 4] = cuePosition;
+    app.rain.webclIntView[3 * i + 2] = cuePosition;
   }
 };
 
@@ -358,23 +364,41 @@ app.webAudioSimulateRain = function (timestamp) {
   }
 };
 
-app.webclSimulateRainAudio = function () {
+app.webclSimulateRainAudio = function (e) {
   "use strict";
-  var i;
+  var i,
+    response,
+    outputFullBuffer,
+    outputLeft,
+    outputRight;
   
   for (i = 0; i < app.rain.max; i += 1) {
     //If "life" has been reset: start a new sound.
     //Else: Keep simulating current one.
+    
     if (app.rain.webAudioView[3 * i + 2] === 1) {
-      app.rain.webclFloatView[5 * i] = app.rain.webAudioView[3 * i] * app.webclDistanceScale;
-      app.rain.webclFloatView[5 * i + 1] = app.rain.webAudioView[3 * i + 1] * app.webclDistanceScale;
+      app.rain.webclFloatView[2 * i] = app.rain.webAudioView[3 * i] * app.webclDistanceScale;
+      app.rain.webclFloatView[2 * i + 1] = app.rain.webAudioView[3 * i + 1] * app.webclDistanceScale;
+      
       //Set the current sample to the start.
-      app.rain.webclIntView[5 * i + 4] = app.rain.webclIntView[5 * i + 2];
-      //TODO: Adjust sampleStart (5i + 2) and sampleEnd (5i + 3) for new sound cue, if multiple.
+      app.rain.webclIntView[3 * i + 2] = app.rain.webclIntView[3 * i];
+      //TODO: Adjust sampleStart (3i) and sampleEnd (2i + 1) for new sound cue, if multiple.
+      app.rain.webAudioView[3 * i + 2] = 0.99;
+      
     } else {
-      //If no new particle, increment by number of samples done in last batch.
-      app.rain.webclIntView[5 * i + 4] += app.rain.timestep;
+      app.rain.webclIntView[3 * i + 2] += app.rain.timestep;
     }
+  }
+  
+  response = app.runKernel();
+  
+  outputFullBuffer = e.outputBuffer;
+  outputLeft = outputFullBuffer.getChannelData(0);
+  outputRight = outputFullBuffer.getChannelData(1);
+  
+  for (i = 0; i < 2 * app.rain.timestep; i += 2) {
+    outputLeft[i / 2] = response[i];
+    outputRight[i / 2] = response[i + 1];
   }
 };
 
@@ -421,7 +445,46 @@ app.getKernel = function () {
 
 app.setupKernel = function () {
   "use strict";
+  var cl;
   
+  cl = app.clGetter.clCtx;
+  app.bufParticlesFloat = cl.createBuffer(window.WebCL.MEM_READ_ONLY, app.rain.webclCallsFloat.byteLength);
+  app.bufParticlesInt = cl.createBuffer(window.WebCL.MEM_READ_ONLY, app.rain.webclCallsInt.byteLength);
+  app.bufOutput = cl.createBuffer(window.WebCL.MEM_WRITE_ONLY, 8 * app.rain.timestep);
+  app.bufSoundCues = cl.createBuffer(window.WebCL.MEM_READ_ONLY, app.rain.samples.getChannelData(0).byteLength);
+  app.clProgram = cl.createProgram(app.kernelSrc);
+  app.device = cl.getInfo(window.WebCL.CONTEXT_DEVICES)[0];
+  app.clProgram.build([app.device], "");
+  app.kernel = app.clProgram.createKernel('clMixSamples');
+  app.kernel.setArg(0, app.bufParticlesFloat);
+  app.kernel.setArg(1, app.bufParticlesInt);
+  app.kernel.setArg(2, app.bufOutput);
+  app.kernel.setArg(3, app.bufSoundCues);
+  app.kernel.setArg(6, new window.Int32Array([app.rain.max]));
+  app.kernel.setArg(7, new window.Int32Array([app.rain.timestep]));
+};
+
+app.runKernel = function () {
+  "use strict";
+  var cl,
+    output;
+  
+  cl = app.clGetter.clCtx;
+  app.kernel.setArg(4, new window.Float32Array([(app.boid.location.x / app.elMap.clientWidth) * app.webclDistanceScale, (app.boid.location.y / app.elMap.clientHeight) * app.webclDistanceScale]));
+  app.kernel.setArg(5, new window.Float32Array([app.boid.direction.x, app.boid.direction.y]));
+  
+  app.cmdQueue = cl.createCommandQueue(app.device);
+  app.cmdQueue.enqueueWriteBuffer(app.bufParticlesFloat, false, 0, app.rain.webclCallsFloat.byteLength, app.rain.webclFloatView);
+  app.cmdQueue.enqueueWriteBuffer(app.bufParticlesInt, false, 0, app.rain.webclCallsInt.byteLength, app.rain.webclIntView);
+  app.cmdQueue.enqueueWriteBuffer(app.bufSoundCues, false, 0, app.rain.samples.getChannelData(0).byteLength, app.rain.samples.getChannelData(0));
+  
+  app.cmdQueue.enqueueNDRangeKernel(app.kernel, 1, null, [app.rain.timestep]);
+  
+  output = new window.Float32Array(app.rain.timestep * 2);
+  app.cmdQueue.enqueueReadBuffer(app.bufOutput, false, 0, output.byteLength, output);
+  //app.cmdQueue.enqueueReadBuffer(app.bufOutput, false, 0, app.rain.timestep * 2, output);
+  
+  return output;
 };
 
 //region Window Event Listeners

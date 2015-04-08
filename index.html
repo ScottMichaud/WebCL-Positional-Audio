@@ -31,12 +31,12 @@
     }
   </script>
   <script type="text/x-opencl" id="clMixSamples">
-    typedef struct {
-      float2 pos;
-      int sampleStart;
-      int sampleEnd;
-      int samplePosition;
-    } stParticle;
+    //typedef struct {
+    //  float2 pos;
+    //  int sampleStart;
+    //  int sampleEnd;
+    //  int samplePosition;
+    //} stParticle;
     
     // Particle Structure:
     //
@@ -54,13 +54,14 @@
     //
     // Total: 8 + 4 + 4 + 4 = 20 Bytes per struct
     
-    __kernel void clMixSamples(__global stParticle* particles,
+    __kernel void clMixSamples(__global float2* f_particles,
+                             __global int3* i_particles,
                              __global float2* output,
                              __global float* soundCues,
                              float2 obsLocation,
                              float2 obsDirection,
-                             uint numParticles,
-                             uint numOutput)
+                             int numParticles,
+                             int numOutput)
   {
       //output is float2 because it's stereo.
       //numOutput is the number of samples in ONE channel of the resulting
@@ -86,40 +87,39 @@
       
       for (int itr=0; itr < numParticles; itr++)
       {
-          CurrentPosition = particles[itr].samplePosition + i;
+          CurrentPosition = i_particles[itr].z + i;
           
-          if ((CurrentPosition < particles[itr].sampleStart) ||
-              (CurrentPosition >= particles[itr].sampleEnd))
+          if ((CurrentPosition >= i_particles[itr].x) &&
+              (CurrentPosition < i_particles[itr].y))
           {
-              //We're Out of Bounds for the sample. No effect. 
-              continue;
+              CurrentSample = soundCues[CurrentPosition] * 1000.f;
+          
+              SourceDistance = distance(obsLocation, f_particles[itr]);
+              SourceDistance = clamp(SourceDistance, 50.f, 1000.f);
+              CurrentGain = 50.f / SourceDistance;
+
+              CurrentDirection = f_particles[itr] - obsLocation;
+              CurrentDirection = normalize(CurrentDirection);
+
+              CurrentLeft = dot(CurrentDirection, -obsRight);
+              CurrentLeft += 1.0f;
+              CurrentLeft *= 0.5f;
+              CurrentLeft *= CurrentSample;
+              CurrentLeft *= CurrentGain;
+
+              CurrentRight = dot(CurrentDirection, obsRight);
+              CurrentRight += 1.0f;
+              CurrentRight *= 0.5f;
+              CurrentRight *= CurrentSample;
+              CurrentRight *= CurrentGain;
+
+              OutputValue.x += CurrentLeft;
+              OutputValue.y += CurrentRight;
           }
-           
-          CurrentSample = soundCues[CurrentPosition];
-          
-          SourceDistance = distance(obsLocation, particles[itr].pos);
-          SourceDistance = clamp(SourceDistance, 50.f, 1000.f);
-          CurrentGain = 50.f / SourceDistance;
-          
-          CurrentDirection = particles[itr].pos - obsLocation;
-          CurrentDirection = normalize(CurrentDirection);
-          
-          CurrentLeft = dot(CurrentDirection, -obsRight);
-          CurrentLeft += 1.0f;
-          CurrentLeft *= 0.5f;
-          CurrentLeft *= CurrentSample;
-          CurrentLeft *= CurrentGain;
-          
-          CurrentRight = dot(CurrentDirection, obsRight);
-          CurrentRight += 1.0f;
-          CurrentRight *= 0.5f;
-          CurrentRight *= CurrentSample;
-          CurrentRight *= CurrentGain;
-          
-          OutputValue.x += CurrentLeft;
-          OutputValue.y += CurrentRight;
       }
       
+      //output[i] = (float2)(0.01f, 0.01f);
+      //output[i] = (float2)(CurrentLeft, CurrentRight);
       output[i] = OutputValue;
   }
   </script>

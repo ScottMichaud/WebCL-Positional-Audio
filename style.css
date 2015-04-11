@@ -19,7 +19,7 @@ html, body{
 }
 
 #webclDeviceSelector {
-  margin-left: 15px; text-align: right; margin-top: 10px;
+  text-align: right; margin-top: 10px;
 }
 
 .upperOptions {
@@ -35,7 +35,7 @@ html, body{
 }
 
 #leftOptions {
-  float: left; margin-right: 70px;
+  float: left; margin-right: 70px; text-align: right;
 }
 
 #rightOptions {
@@ -43,11 +43,7 @@ html, body{
 }
 
 #startStop {
-  margin-top: 15px;
-}
-
-#typeWebCL {
-  margin-right: -15px;
+  margin-top: 15px; width: 75px;
 }
 
 #inputParticleCount {

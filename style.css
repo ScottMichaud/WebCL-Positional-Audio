@@ -35,7 +35,7 @@ html, body{
 }
 
 #leftOptions {
-  float: left; margin-right: 50px;
+  float: left; margin-right: 70px;
 }
 
 #rightOptions {
@@ -54,8 +54,8 @@ html, body{
   margin-left: 5px;
   margin-right: 5px;
   margin-top: 15px;
-  text-align: center;
-  width: 50px;
+  text-align: right;
+  width: 100px;
 }
 
 #glPoints {

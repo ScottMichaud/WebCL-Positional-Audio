@@ -126,18 +126,32 @@
 </head>
 <body>
   <div id="top">
-    <div id="upperOptions">
-      <input id="typeWebAudio" type="radio" name="apiType" value="webaudio" onclick="app.selectNoOffload();" autocomplete="off">
-      <label for="webaudio">No Offloading</label>
-      <input id="typeWebCL" type="radio" name="apiType" value="webcl" onclick="app.selectWebCL();" autocomplete="off">
-      <label for="webcl">WebCL Offload</label>
-      <select name="webclDevice" id="webclDeviceSelector">
-      </select>
-    </div>
-    <div id="lowerOptions">
-      <button autocomplete="off" id="startStop" onclick="app.beginPress();" disabled>
-        Begin
-      </button>
+    <div id="topCenter">
+      <div id="leftOptions">
+        <div class="upperOptions">
+          <label>Maximum Particles</label>
+          <input id="inputParticleCount" type="number" autocomplete="off" value="50">
+
+        <button autocomplete="off" id="startStop" onclick="app.beginPress();" disabled>
+            Begin
+          </button>
+        </div>
+        <div class="lowerOptions">
+
+        </div>
+      </div>
+      <div id="rightOptions">
+        <div class="upperOptions">
+          <label for="webaudio">No Offloading</label>
+          <input id="typeWebAudio" type="radio" name="apiType" value="webaudio" onclick="app.selectNoOffload();" autocomplete="off">
+          <label for="webcl">WebCL Offload</label>
+          <input id="typeWebCL" type="radio" name="apiType" value="webcl" onclick="app.selectWebCL();" autocomplete="off">
+        </div>
+        <div class="lowerOptions">
+          <select name="webclDevice" id="webclDeviceSelector">
+          </select>
+        </div>
+      </div>
     </div>
   </div>
   <div id="main">

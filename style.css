@@ -5,8 +5,8 @@ html, body{
 }
 
 #top {
-  top: 0px; width: 100%; height: 50px; position: absolute; text-align: center;
-  display: inline-block; margin: auto; left: 0; right: 0;
+  top: 0px; width: calc(100% - 150px); height: 75px; position: absolute;
+  text-align: center; margin: auto; left: 0; right: 0;
 }
 
 #main {
@@ -19,19 +19,43 @@ html, body{
 }
 
 #webclDeviceSelector {
-  margin-left: 15px; text-align: right;
+  margin-left: 15px; text-align: right; margin-top: 10px;
 }
 
-#upperOptions {
+.upperOptions {
   padding-top: 10px;
 }
 
-#lowerOptions {
+.lowerOptions {
   
 }
 
+#topCenter {
+  display: inline-block;
+}
+
+#leftOptions {
+  float: left;
+}
+
+#rightOptions {
+  float: left;
+}
+
 #startStop {
-  position: absolute; bottom: -15px;
+  margin-top: 15px;
+}
+
+#typeWebCL {
+  margin-right: -15px;
+}
+
+#inputParticleCount {
+  margin-left: 5px;
+  margin-right: 5px;
+  margin-top: 15px;
+  text-align: center;
+  width: 50px;
 }
 
 #glPoints {

@@ -35,7 +35,7 @@ html, body{
 }
 
 #leftOptions {
-  float: left;
+  float: left; margin-right: 50px;
 }
 
 #rightOptions {

@@ -38,6 +38,10 @@ html, body{
   float: left; margin-right: 70px; text-align: right;
 }
 
+#typeWebAudio {
+  margin-right: 25px;
+}
+
 #rightOptions {
   float: left;
 }

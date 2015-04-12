@@ -160,6 +160,42 @@ app.canvasLMBUp = function (e) {
   }
 };
 
+app.parseInputParticleCount = function () {
+  "use strict";
+  var i,
+    value,
+    isValid;
+  
+  value = document.getElementById("inputParticleCount").value;
+  isValid = true;
+  
+  for (i = 0; i < value.length; i += 1) {
+    switch (value.charAt(i)) {
+      case "0":
+      case "1":
+      case "2":
+      case "3":
+      case "4":
+      case "5":
+      case "6":
+      case "7":
+      case "8":
+      case "9":
+        break;
+      default:
+        isValid = false;
+    }
+  }
+  
+  if (value.length < 1) {
+    isValid = false;
+  }
+  
+  if (isValid) {
+    app.rain.max = window.parseInt(value, 10);
+  }
+};
+
 app.beginPress = function () {
   "use strict";
   
@@ -168,6 +204,9 @@ app.beginPress = function () {
   app.elStart.onclick = app.stopPress;
   
   app.lastFrame = window.performance.now();
+  
+  app.parseInputParticleCount();
+  
   app.generateInitialParticles(app.rain.max);
   
   if (app.elWebCL.hasAttribute('checked')) {
@@ -289,7 +328,7 @@ app.generateInitialParticles = function (number) {
     cueSamples,
     cuePosition;
   
-  app.rain.max = number;
+  //app.rain.max = number;
   
   //Web Audio: AOS: {float x, float y, float life}
   //WebCL: AOS: {float x, float y, int32 sampleStart, int32 sampleEnd, int32 samplePosition}

@@ -169,6 +169,8 @@ app.parseInputParticleCount = function () {
   value = document.getElementById("inputParticleCount").value;
   isValid = true;
   
+  //Only allow direct integer input.
+  //If not an integer, use previous amount.
   for (i = 0; i < value.length; i += 1) {
     switch (value.charAt(i)) {
       case "0":

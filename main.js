@@ -271,6 +271,12 @@ app.unlockBegin = function () {
 app.firstDraw = function () {
   "use strict";
   
+  app.elRain.width = app.elMap.clientWidth;
+  app.elRain.height = app.elMap.clientHeight;
+  app.gl.viewport(0, 0, app.gl.drawingBufferWidth, app.gl.drawingBufferHeight);
+  app.elBoid.width = app.elMap.clientWidth;
+  app.elBoid.height = app.elMap.clientHeight;
+  
   app.boid.defineBoid();
   app.boid.draw();
 };

@@ -500,7 +500,6 @@ app.setupKernel = function () {
   var cl;
   
   cl = app.clGetter.clCtx;
-  app.ioQueue = app.clGetter.clCtx.createCommandQueue(app.device);
   app.cmdQueue = app.clGetter.clCtx.createCommandQueue(app.device);
   app.bufParticlesFloat = cl.createBuffer(window.WebCL.MEM_READ_ONLY, app.rain.webclCallsFloat.byteLength);
   app.bufParticlesInt = cl.createBuffer(window.WebCL.MEM_READ_ONLY, app.rain.webclCallsInt.byteLength);
@@ -516,6 +515,7 @@ app.setupKernel = function () {
   app.kernel.setArg(3, app.bufSoundCues);
   app.kernel.setArg(6, new window.Int32Array([app.rain.max]));
   app.kernel.setArg(7, new window.Int32Array([app.rain.timestep]));
+  app.cmdQueue.enqueueWriteBuffer(app.bufSoundCues, false, 0, app.rain.samples.getChannelData(0).byteLength, app.rain.samples.getChannelData(0));
 };
 
 app.runKernel = function () {
@@ -530,7 +530,6 @@ app.runKernel = function () {
   //app.cmdQueue = cl.createCommandQueue(app.device);
   app.cmdQueue.enqueueWriteBuffer(app.bufParticlesFloat, false, 0, app.rain.webclCallsFloat.byteLength, app.rain.webclFloatView);
   app.cmdQueue.enqueueWriteBuffer(app.bufParticlesInt, false, 0, app.rain.webclCallsInt.byteLength, app.rain.webclIntView);
-  app.cmdQueue.enqueueWriteBuffer(app.bufSoundCues, false, 0, app.rain.samples.getChannelData(0).byteLength, app.rain.samples.getChannelData(0));
   
   app.cmdQueue.enqueueNDRangeKernel(app.kernel, 1, null, [app.rain.timestep]);
   

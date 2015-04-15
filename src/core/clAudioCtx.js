@@ -52,7 +52,7 @@ window.pmAudio.clAudioCtx = function () {
         platform: pmAudio.clAudioCtx.prototype.clPlatforms[i],
         device: platformDevices[j],
         type: platformDevices[j].getInfo(window.webcl.DEVICE_TYPE),
-        name: platformDevices[j].getInfo(window.webcl.DEVICE_NAME).replace(/\s{2,}/g, ''),
+        name: platformDevices[j].getInfo(window.webcl.DEVICE_NAME).replace(/\s{2,}/g, '') + " with " + pmAudio.clAudioCtx.prototype.clPlatforms[i].getInfo(window.webcl.PLATFORM_VENDOR).replace(/\s{2,}/g, '') + " drivers",
         pID: i,
         dID: j
       });

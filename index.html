@@ -60,14 +60,32 @@
                              __global float* soundCues,
                              float2 obsLocation,
                              float2 obsDirection,
-                             int numParticles)
+                             int numParticles,
+                             int numCues)
   {
       //output is float2 because it's stereo.
       //numOutput is the number of samples in ONE channel of the resulting
       //stream. Thus, because this is stereo, mentally double.
 
       int i = get_global_id(0); //Sample number
+      int itr = 0;
       int numOutput = get_global_size(0);
+      
+      //Copy the lookup table to local memory.
+      //THIS IS ONLY APPLICABLE BECAUSE soundCues IS SMALL
+      //But that's OKAY. Depending on the performance we get, this
+      //optimization can let us do a multi-kernel run where we
+      //load chunks of soundCues buffer into local memory and
+      //use it to populate a sorted list of needed samples
+      //in global memory (if a lot of samples are reused).
+      
+      __local float _soundCues[3000];
+      for (itr = get_local_id(0); itr < numCues; itr += get_local_size(0))
+      {
+        _soundCues[itr] = soundCues[itr];
+      }
+      
+      barrier(CLK_LOCAL_MEM_FENCE);
       
       if (i >= numOutput)
       {
@@ -86,14 +104,14 @@
       float CurrentLeft = 0.0f;
       float CurrentRight = 0.0f;
       
-      for (int itr=0; itr < numParticles; itr++)
+      for (itr = 0; itr < numParticles; itr++)
       {
           CurrentPosition = i_particles[itr].z + i;
           
           if ((CurrentPosition >= i_particles[itr].x) &&
               (CurrentPosition < i_particles[itr].y))
           {
-              CurrentSample = soundCues[CurrentPosition] * 1000.f;
+              CurrentSample = _soundCues[CurrentPosition] * 100.f;
           
               SourceDistance = distance(obsLocation, f_particles[itr]);
               SourceDistance = clamp(SourceDistance, 50.f, 1000.f);

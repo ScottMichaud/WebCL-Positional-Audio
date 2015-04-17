@@ -223,7 +223,7 @@ app.beginPress = function () {
       app.scriptNode.connect(app.audio.destination);
     };
     
-    window.setTimeout(preventCrash, 0);
+    window.setTimeout(preventCrash, 2000);
   }
 };
 
@@ -519,6 +519,8 @@ app.setupKernel = function () {
   app.kernel.setArg(2, app.bufOutput);
   app.kernel.setArg(3, app.bufSoundCues);
   app.kernel.setArg(6, new window.Int32Array([app.rain.max]));
+  //Each sound sample is 4 bytes.
+  app.kernel.setArg(7, new window.Int32Array([app.rain.samples.getChannelData(0).byteLength / 4]));
   app.cmdQueue = app.clGetter.clCtx.createCommandQueue(app.device);
   app.cmdQueue.enqueueWriteBuffer(app.bufSoundCues, false, 0, app.rain.samples.getChannelData(0).byteLength, app.rain.samples.getChannelData(0));
   app.output = new window.Float32Array(app.rain.timestep * 2);

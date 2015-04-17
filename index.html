@@ -60,14 +60,15 @@
                              __global float* soundCues,
                              float2 obsLocation,
                              float2 obsDirection,
-                             int numParticles,
-                             int numOutput)
+                             int numParticles)
   {
       //output is float2 because it's stereo.
       //numOutput is the number of samples in ONE channel of the resulting
       //stream. Thus, because this is stereo, mentally double.
 
       int i = get_global_id(0); //Sample number
+      int numOutput = get_global_size(0);
+      
       if (i >= numOutput)
       {
           return;

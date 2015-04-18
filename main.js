@@ -28,6 +28,7 @@ app.init = function () {
   app.rain.decay = 500; //Milliseconds
   app.rain.probability = 1 / ((app.rain.decay / 1000) * 60);
   app.rain.timestep = 512; //Not relevant for WebAudio, just WebCL.
+  app.rain.bIsFirstBuffer = true;
   app.webclDistanceScale = 1000;
   
   app.elMap = document.getElementById('main'); //Container for various canvas layers.
@@ -173,19 +174,19 @@ app.parseInputParticleCount = function () {
   //If not an integer, use previous amount.
   for (i = 0; i < value.length; i += 1) {
     switch (value.charAt(i)) {
-      case "0":
-      case "1":
-      case "2":
-      case "3":
-      case "4":
-      case "5":
-      case "6":
-      case "7":
-      case "8":
-      case "9":
-        break;
-      default:
-        isValid = false;
+    case "0":
+    case "1":
+    case "2":
+    case "3":
+    case "4":
+    case "5":
+    case "6":
+    case "7":
+    case "8":
+    case "9":
+      break;
+    default:
+      isValid = false;
     }
   }
   
@@ -219,7 +220,7 @@ app.beginPress = function () {
     
     preventCrash = function () {
       app.scriptNode = app.audio.createScriptProcessor(app.rain.timestep, 2, 2);
-      app.scriptNode.onaudioprocess = app.webclSimulateRainAudio;
+      app.scriptNode.onaudioprocess = app.scriptAudioCallback;
       app.scriptNode.connect(app.audio.destination);
     };
     
@@ -524,6 +525,12 @@ app.setupKernel = function () {
   app.cmdQueue = app.clGetter.clCtx.createCommandQueue(app.device);
   app.cmdQueue.enqueueWriteBuffer(app.bufSoundCues, false, 0, app.rain.samples.getChannelData(0).byteLength, app.rain.samples.getChannelData(0));
   app.output = new window.Float32Array(app.rain.timestep * 2);
+};
+
+app.scriptAudioCallback = function () {
+  "use strict";
+  
+  
 };
 
 app.runKernel = function () {

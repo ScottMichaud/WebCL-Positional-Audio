@@ -28,7 +28,7 @@ app.init = function () {
   app.rain.decay = 500; //Milliseconds
   app.rain.probability = 1 / ((app.rain.decay / 1000) * 60);
   app.rain.timestep = 512; //Not relevant for WebAudio, just WebCL.
-  app.rain.bIsFirstBuffer = true;
+  app.rain.bOutputFirstBuffer = true;
   app.rain.firstBuffer = new window.Float32Array(app.rain.timestep * 2);
   app.rain.secondBuffer = new window.Float32Array(app.rain.timestep * 2);
   app.rain.spawnDelay = [];
@@ -532,7 +532,9 @@ app.setupKernel = function () {
 
 app.scriptAudioCallback = function (e) {
   "use strict";
-  var i;
+  var i,
+    leftChannel,
+    rightChannel;
   
   //Get new particles
   for (i = 0; i < app.rain.spawnDelay.length; i += 1) {
@@ -551,6 +553,31 @@ app.scriptAudioCallback = function (e) {
   //Kick off WebCL event
   
   //Write previous WebCL call to output.
+  leftChannel = e.outputBuffer.getChannelData(0);
+  rightChannel = e.outputBuffer.getChannelData(1);
+  
+  if (app.rain.bOutputFirstBuffer) {
+    
+    for (i = 0; i < app.rain.timestep; i += 1) {
+      leftChannel[i] = app.rain.firstBuffer[i]
+      rightChannel[i] = app.rain.firstBuffer[i + app.rain.timestep];
+      app.rain.firstBuffer[i] = 0;
+      app.rain.firstBuffer[i + app.rain.timestep] = 0;
+    }
+    
+  } else {
+    
+    for (i = 0; i < app.rain.timestep; i += 1) {
+      leftChannel[i] = app.rain.secondBuffer[i]
+      rightChannel[i] = app.rain.secondBuffer[i + app.rain.timestep];
+      app.rain.secondBuffer[i] = 0;
+      app.rain.secondBuffer[i + app.rain.timestep] = 0;
+    }
+    
+  }
+  
+  //Swap buffers for next run
+  app.rain.bOutputFirstBuffer = !app.rain.bOutputFirstBuffer;
 };
 
 app.runKernel = function () {

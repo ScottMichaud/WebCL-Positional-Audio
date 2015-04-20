@@ -29,6 +29,9 @@ app.init = function () {
   app.rain.probability = 1 / ((app.rain.decay / 1000) * 60);
   app.rain.timestep = 512; //Not relevant for WebAudio, just WebCL.
   app.rain.bIsFirstBuffer = true;
+  app.rain.firstBuffer = new window.Float32Array(app.rain.timestep * 2);
+  app.rain.secondBuffer = new window.Float32Array(app.rain.timestep * 2);
+  app.rain.spawnDelay = [];
   app.webclDistanceScale = 1000;
   
   app.elMap = document.getElementById('main'); //Container for various canvas layers.
@@ -527,10 +530,27 @@ app.setupKernel = function () {
   app.output = new window.Float32Array(app.rain.timestep * 2);
 };
 
-app.scriptAudioCallback = function () {
+app.scriptAudioCallback = function (e) {
   "use strict";
+  var i;
+  
+  //Get new particles
+  for (i = 0; i < app.rain.spawnDelay.length; i += 1) {
+    if (app.rain.spawnDelay[i] !== 0) {
+      //Queue a new rain sample delayed by this amount.
+      
+    }
+  }
   
   
+  //Blank array now that we know what we need to spawn
+  app.rain.spawnDelay.fill(0);
+  
+  //Now that 
+  
+  //Kick off WebCL event
+  
+  //Write previous WebCL call to output.
 };
 
 app.runKernel = function () {

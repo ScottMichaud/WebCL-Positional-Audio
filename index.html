@@ -154,15 +154,17 @@
         <div class="lowerOptions">
           <select name="webclDevice" id="webclDeviceSelector">
           </select>
+          <button autocomplete="off" id="load" onclick="app.loadPress();" disabled>
+            Select Processor
+          </button>
         </div>
       </div>
       <div id="rightOptions">
         <div class="upperOptions">
           <label>Maximum Particles</label>
           <input id="inputParticleCount" type="number" autocomplete="off" value="50">
-
           <button autocomplete="off" id="startStop" onclick="app.beginPress();" disabled>
-            Begin
+            Play
           </button>
         </div>
         <div class="lowerOptions">

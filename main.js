@@ -428,11 +428,7 @@ app.webAudioSimulateRain = function (timestamp) {
 
 app.webclSimulateRainAudio = function (e) {
   "use strict";
-  var i,
-    response,
-    outputFullBuffer,
-    outputLeft,
-    outputRight;
+  var i;
   
   for (i = 0; i < app.rain.max; i += 1) {
     //If "life" has been reset: start a new sound.
@@ -452,11 +448,11 @@ app.webclSimulateRainAudio = function (e) {
     }
   }
   
-  response = app.runKernel();
+  //response = app.runKernel();
   
-  outputFullBuffer = e.outputBuffer;
-  outputLeft = outputFullBuffer.getChannelData(0);
-  outputRight = outputFullBuffer.getChannelData(1);
+  //outputFullBuffer = e.outputBuffer;
+  //outputLeft = outputFullBuffer.getChannelData(0);
+  //outputRight = outputFullBuffer.getChannelData(1);
   
   for (i = 0; i < 2 * app.rain.timestep; i += 2) {
     outputLeft[i / 2] = response[i];

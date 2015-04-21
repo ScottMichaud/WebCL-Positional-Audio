@@ -538,6 +538,7 @@ app.scriptAudioCallback = function (e) {
   
   //Read the last audio frame.
   app.cmdQueue.enqueueReadBuffer(app.bufOutput, false, 0, app.output.byteLength, app.output);
+  app.cmdQueue.finish();
   
   if (app.rain.bOutputFirstBuffer) {
     app.rain.firstBuffer = app.output;
@@ -557,9 +558,9 @@ app.scriptAudioCallback = function (e) {
   //Blank array now that we know what we need to spawn
   app.rain.spawnDelay.fill(0);
   
+  //Kick off WebCL event. Make it async.
+  window.setTimeout(app.runKernel, 0);
   
-  
-  //Kick off WebCL event
   
   //Write previous WebCL call to output.
   leftChannel = e.outputBuffer.getChannelData(0);

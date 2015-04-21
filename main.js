@@ -223,7 +223,7 @@ app.beginPress = function () {
       app.scriptNode.connect(app.audio.destination);
     };
     
-    window.setTimeout(preventCrash, 2000);
+    window.setTimeout(preventCrash, 0);
   }
 };
 
@@ -353,6 +353,7 @@ app.generateInitialParticles = function (number) {
   //WebCL: AOS: {float x, float y, int32 sampleStart, int32 sampleEnd, int32 samplePosition}
   //CHANGE: Now two: {float x, float y} & {int32 sampleStart, int32 sampleEnd, int32 samplePosition}
   //Structures are not allowed in kernel params for WebCL.
+  //Why not. Make it SoA for performance.
     
   app.rain.webAudioCalls = new window.ArrayBuffer(number * 12);
   app.rain.webclCallsFloat = new window.ArrayBuffer(number * 8);
@@ -369,7 +370,6 @@ app.generateInitialParticles = function (number) {
     app.rain.webAudioView[i] = Math.random();
   }
   
-  //Replacement for below.
   for (i = 0; i < app.rain.max; i += 1) {
     app.rain.webclFloatView[2 * i] = app.rain.webAudioView[3 * i] * app.webclDistanceScale;
     app.rain.webclFloatView[2 * i + 1] = app.rain.webAudioView[3 * i + 1] * app.webclDistanceScale;

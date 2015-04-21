@@ -454,10 +454,10 @@ app.webclSimulateRainAudio = function (e) {
   //outputLeft = outputFullBuffer.getChannelData(0);
   //outputRight = outputFullBuffer.getChannelData(1);
   
-  for (i = 0; i < 2 * app.rain.timestep; i += 2) {
-    outputLeft[i / 2] = response[i];
-    outputRight[i / 2] = response[i + 1];
-  }
+  //for (i = 0; i < 2 * app.rain.timestep; i += 2) {
+  //  outputLeft[i / 2] = response[i];
+  //  outputRight[i / 2] = response[i + 1];
+  //}
 };
 
 app.webclSimulateRainVideo = function (timestamp) {

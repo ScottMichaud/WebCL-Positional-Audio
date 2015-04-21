@@ -94,8 +94,6 @@
 
       float2 OutputValue = (float2)(0.0f, 0.0f);
       float2 obsRight = (float2)(-obsDirection.y, obsDirection.x);
-      //It's normalized in boid.js, but what's one op among friends?
-      obsRight = normalize(obsRight);
       float2 CurrentDirection = (float2)(0.0f, 0.0f);
       int CurrentPosition = 0;
       float CurrentSample = 0.0f;

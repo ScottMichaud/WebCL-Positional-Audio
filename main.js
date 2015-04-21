@@ -554,8 +554,11 @@ app.scriptAudioCallback = function (e) {
   //Blank array now that we know what we need to spawn
   app.rain.spawnDelay.fill(0);
   
-  //Kick off WebCL event. Make it async.
-  window.setTimeout(app.runKernel, 0);
+  //Kick off WebCL event. Make it affect the next callback.
+  //window.setTimeout(app.runKernel, 0);
+  //This might not be possible, because of how the browser schedules
+  //onaudioprocess callbacks.
+  app.runKernel();
   
   //Write previous WebCL call to output.
   leftChannel = e.outputBuffer.getChannelData(0);
@@ -566,6 +569,8 @@ app.scriptAudioCallback = function (e) {
     for (i = 0; i < app.rain.timestep; i += 1) {
       leftChannel[i] = app.rain.firstBuffer[i];
       rightChannel[i] = app.rain.firstBuffer[i + app.rain.timestep];
+      
+      //Blank the buffer behind it. Read without write -> silence.
       app.rain.firstBuffer[i] = 0;
       app.rain.firstBuffer[i + app.rain.timestep] = 0;
     }
@@ -575,6 +580,8 @@ app.scriptAudioCallback = function (e) {
     for (i = 0; i < app.rain.timestep; i += 1) {
       leftChannel[i] = app.rain.secondBuffer[i];
       rightChannel[i] = app.rain.secondBuffer[i + app.rain.timestep];
+      
+      //Blank the buffer behind it. Read without write -> silence.
       app.rain.secondBuffer[i] = 0;
       app.rain.secondBuffer[i + app.rain.timestep] = 0;
     }

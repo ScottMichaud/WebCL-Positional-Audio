@@ -536,6 +536,15 @@ app.scriptAudioCallback = function (e) {
     leftChannel,
     rightChannel;
   
+  //Read the last audio frame.
+  app.cmdQueue.enqueueReadBuffer(app.bufOutput, false, 0, app.output.byteLength, app.output);
+  
+  if (app.rain.bOutputFirstBuffer) {
+    app.rain.firstBuffer = app.output;
+  } else {
+    app.rain.secondBuffer = app.output;
+  }
+  
   //Get new particles
   for (i = 0; i < app.rain.spawnDelay.length; i += 1) {
     if (app.rain.spawnDelay[i] !== 0) {
@@ -548,7 +557,7 @@ app.scriptAudioCallback = function (e) {
   //Blank array now that we know what we need to spawn
   app.rain.spawnDelay.fill(0);
   
-  //Now that 
+  
   
   //Kick off WebCL event
   
@@ -559,7 +568,7 @@ app.scriptAudioCallback = function (e) {
   if (app.rain.bOutputFirstBuffer) {
     
     for (i = 0; i < app.rain.timestep; i += 1) {
-      leftChannel[i] = app.rain.firstBuffer[i]
+      leftChannel[i] = app.rain.firstBuffer[i];
       rightChannel[i] = app.rain.firstBuffer[i + app.rain.timestep];
       app.rain.firstBuffer[i] = 0;
       app.rain.firstBuffer[i + app.rain.timestep] = 0;
@@ -568,7 +577,7 @@ app.scriptAudioCallback = function (e) {
   } else {
     
     for (i = 0; i < app.rain.timestep; i += 1) {
-      leftChannel[i] = app.rain.secondBuffer[i]
+      leftChannel[i] = app.rain.secondBuffer[i];
       rightChannel[i] = app.rain.secondBuffer[i + app.rain.timestep];
       app.rain.secondBuffer[i] = 0;
       app.rain.secondBuffer[i + app.rain.timestep] = 0;
@@ -597,11 +606,11 @@ app.runKernel = function () {
   app.cmdQueue.enqueueNDRangeKernel(app.kernel, 1, null, [app.rain.timestep]);
   
   //output = new window.Float32Array(app.rain.timestep * 2);
-  app.cmdQueue.enqueueReadBuffer(app.bufOutput, false, 0, app.output.byteLength, app.output);
+  //app.cmdQueue.enqueueReadBuffer(app.bufOutput, false, 0, app.output.byteLength, app.output);
   //console.log(window.performance.now() - time);
   //app.cmdQueue.enqueueReadBuffer(app.bufOutput, false, 0, app.rain.timestep * 2, output);
   
-  return app.output;
+  //return app.output;
 };
 
 //region Window Event Listeners

@@ -561,7 +561,6 @@ app.scriptAudioCallback = function (e) {
   //Kick off WebCL event. Make it async.
   window.setTimeout(app.runKernel, 0);
   
-  
   //Write previous WebCL call to output.
   leftChannel = e.outputBuffer.getChannelData(0);
   rightChannel = e.outputBuffer.getChannelData(1);
@@ -592,10 +591,8 @@ app.scriptAudioCallback = function (e) {
 
 app.runKernel = function () {
   "use strict";
-  var cl,
-    output;
   
-  cl = app.clGetter.clCtx;
+  //cl = app.clGetter.clCtx;
   app.kernel.setArg(4, new window.Float32Array([(app.boid.location.x / app.elMap.clientWidth) * app.webclDistanceScale, (app.boid.location.y / app.elMap.clientHeight) * app.webclDistanceScale]));
   app.kernel.setArg(5, new window.Float32Array([app.boid.direction.x, app.boid.direction.y]));
   

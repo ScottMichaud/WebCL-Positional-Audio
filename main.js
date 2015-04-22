@@ -173,19 +173,19 @@ app.parseInputParticleCount = function () {
   //If not an integer, use previous amount.
   for (i = 0; i < value.length; i += 1) {
     switch (value.charAt(i)) {
-      case "0":
-      case "1":
-      case "2":
-      case "3":
-      case "4":
-      case "5":
-      case "6":
-      case "7":
-      case "8":
-      case "9":
-        break;
-      default:
-        isValid = false;
+    case "0":
+    case "1":
+    case "2":
+    case "3":
+    case "4":
+    case "5":
+    case "6":
+    case "7":
+    case "8":
+    case "9":
+      break;
+    default:
+      isValid = false;
     }
   }
   
@@ -346,14 +346,6 @@ app.generateInitialParticles = function (number) {
   var i,
     cueSamples,
     cuePosition;
-  
-  //app.rain.max = number;
-  
-  //Web Audio: AOS: {float x, float y, float life}
-  //WebCL: AOS: {float x, float y, int32 sampleStart, int32 sampleEnd, int32 samplePosition}
-  //CHANGE: Now two: {float x, float y} & {int32 sampleStart, int32 sampleEnd, int32 samplePosition}
-  //Structures are not allowed in kernel params for WebCL.
-  //Why not. Make it SoA for performance.
     
   app.rain.webAudioCalls = new window.ArrayBuffer(number * 12);
   app.rain.webclCallsFloat = new window.ArrayBuffer(number * 8);
@@ -371,13 +363,13 @@ app.generateInitialParticles = function (number) {
   }
   
   for (i = 0; i < app.rain.max; i += 1) {
-    app.rain.webclFloatView[2 * i] = app.rain.webAudioView[3 * i] * app.webclDistanceScale;
-    app.rain.webclFloatView[2 * i + 1] = app.rain.webAudioView[3 * i + 1] * app.webclDistanceScale;
+    app.rain.webclFloatView[i] = app.rain.webAudioView[3 * i] * app.webclDistanceScale;
+    app.rain.webclFloatView[i + app.rain.max] = app.rain.webAudioView[3 * i + 1] * app.webclDistanceScale;
     
-    app.rain.webclIntView[3 * i] = 0; //TODO: Multiple Samples
-    app.rain.webclIntView[3 * i + 1] = cueSamples;
+    app.rain.webclIntView[i] = 0; //TODO: Currently. Only one sample, start at index 0.
+    app.rain.webclIntView[i + app.rain.max] = cueSamples;
     cuePosition = app.rain.webAudioView[3 * i + 2] * Math.round(44100 * app.rain.decay / 1000);
-    app.rain.webclIntView[3 * i + 2] = cuePosition;
+    app.rain.webclIntView[i + (2 * app.rain.max)] = cuePosition;
   }
 };
 
@@ -390,8 +382,8 @@ app.webAudioSimulateRain = function (timestamp) {
     pannerNode;
   
   audioTime = app.audio.currentTime;
-  app.audio.listener.setPosition(app.boid.location.x / app.elBoid.width,
-                                 app.boid.location.y / app.elBoid.height,
+  app.audio.listener.setPosition((app.boid.location.x / app.elBoid.width) * app.webclDistanceScale,
+                                 (app.boid.location.y / app.elBoid.height) * app.webclDistanceScale,
                                  0);
   app.audio.listener.setOrientation(-app.boid.direction.x,
                                     -app.boid.direction.y,
@@ -412,12 +404,14 @@ app.webAudioSimulateRain = function (timestamp) {
       srcNode.buffer = app.rain.samples;
       pannerNode = app.audio.createPanner();
       pannerNode.panningModel = 'equalpower';
-      pannerNode.setPosition(app.rain.webAudioView[i],
-                             app.rain.webAudioView[i + 1],
+      pannerNode.distanceModel = 'inverse';
+      pannerNode.refDistance = 200;
+      pannerNode.setPosition(app.rain.webAudioView[i] * app.webclDistanceScale,
+                             app.rain.webAudioView[i + 1] * app.webclDistanceScale,
                              0);
       srcNode.connect(pannerNode);
       pannerNode.connect(app.audio.destination);
-      srcNode.start(audioTime + (0.03 * Math.random()));
+      srcNode.start(0);
     }
   }
 };
@@ -435,16 +429,16 @@ app.webclSimulateRainAudio = function (e) {
     //Else: Keep simulating current one.
     
     if (app.rain.webAudioView[3 * i + 2] === 1) {
-      app.rain.webclFloatView[2 * i] = app.rain.webAudioView[3 * i] * app.webclDistanceScale;
-      app.rain.webclFloatView[2 * i + 1] = app.rain.webAudioView[3 * i + 1] * app.webclDistanceScale;
+      app.rain.webclFloatView[i] = app.rain.webAudioView[3 * i] * app.webclDistanceScale;
+      app.rain.webclFloatView[i + app.rain.max] = app.rain.webAudioView[3 * i + 1] * app.webclDistanceScale;
       
       //Set the current sample to the start.
-      app.rain.webclIntView[3 * i + 2] = app.rain.webclIntView[3 * i];
-      //TODO: Adjust sampleStart (3i) and sampleEnd (2i + 1) for new sound cue, if multiple.
+      app.rain.webclIntView[i + (2 * app.rain.max)] = app.rain.webclIntView[i];
+      //TODO: Adjust sampleStart and sampleEnd for new sound cue, if multiple.
       app.rain.webAudioView[3 * i + 2] = 0.99;
       
     } else {
-      app.rain.webclIntView[3 * i + 2] += app.rain.timestep;
+      app.rain.webclIntView[i + (2 * app.rain.max)] += app.rain.timestep;
     }
   }
   
@@ -454,9 +448,9 @@ app.webclSimulateRainAudio = function (e) {
   outputLeft = outputFullBuffer.getChannelData(0);
   outputRight = outputFullBuffer.getChannelData(1);
   
-  for (i = 0; i < 2 * app.rain.timestep; i += 2) {
-    outputLeft[i / 2] = response[i];
-    outputRight[i / 2] = response[i + 1];
+  for (i = 0; i < app.rain.timestep; i += 1) {
+    outputLeft[i] = response[i];
+    outputRight[i] = response[i + app.rain.timestep];
   }
 };
 
@@ -512,6 +506,7 @@ app.setupKernel = function () {
   app.bufSoundCues = cl.createBuffer(window.WebCL.MEM_READ_ONLY, app.rain.samples.getChannelData(0).byteLength);
   app.clProgram = cl.createProgram(app.kernelSrc);
   app.device = cl.getInfo(window.WebCL.CONTEXT_DEVICES)[0];
+  //app.clProgram.build([app.device], "-cl-fast-relaxed-math");
   app.clProgram.build([app.device], "");
   app.kernel = app.clProgram.createKernel('clMixSamples');
   app.kernel.setArg(0, app.bufParticlesFloat);
@@ -535,17 +530,16 @@ app.runKernel = function () {
   app.kernel.setArg(4, new window.Float32Array([(app.boid.location.x / app.elMap.clientWidth) * app.webclDistanceScale, (app.boid.location.y / app.elMap.clientHeight) * app.webclDistanceScale]));
   app.kernel.setArg(5, new window.Float32Array([app.boid.direction.x, app.boid.direction.y]));
   
-  //app.cmdQueue = cl.createCommandQueue(app.device);
   //var time = window.performance.now();
   app.cmdQueue.enqueueWriteBuffer(app.bufParticlesFloat, false, 0, app.rain.webclCallsFloat.byteLength, app.rain.webclFloatView);
   app.cmdQueue.enqueueWriteBuffer(app.bufParticlesInt, false, 0, app.rain.webclCallsInt.byteLength, app.rain.webclIntView);
   
-  app.cmdQueue.enqueueNDRangeKernel(app.kernel, 1, null, [app.rain.timestep]);
+  //Separating stereo into independent tasks.
+  //Probably better memory coalesce potential, also more work items to fill GPU capacity.
+  app.cmdQueue.enqueueNDRangeKernel(app.kernel, 1, null, [app.rain.timestep * 2]);
   
-  //output = new window.Float32Array(app.rain.timestep * 2);
   app.cmdQueue.enqueueReadBuffer(app.bufOutput, false, 0, app.output.byteLength, app.output);
   //console.log(window.performance.now() - time);
-  //app.cmdQueue.enqueueReadBuffer(app.bufOutput, false, 0, app.rain.timestep * 2, output);
   
   return app.output;
 };

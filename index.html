@@ -31,42 +31,27 @@
     }
   </script>
   <script type="text/x-opencl" id="clMixSamples">
-    //typedef struct {
-    //  float2 pos;
-    //  int sampleStart;
-    //  int sampleEnd;
-    //  int samplePosition;
-    //} stParticle;
+    // Structure of Arrays
+    //
+    // f_particles: x then y of each particle
+    //
+    // i_particles: sampleStart then sampleEnd then interpPosition
+    //              for each particle's sample space.
+    //
+    // output: left then right
+    //
+    // soundCues: each source stacked, with sample. 
+    //
     
-    // Particle Structure:
-    //
-    // pos: x, y coordinate of map. 0 to 1. (8 bytes)
-    //
-    // sampleStart: Added for multiple sounds, where this sound starts. (4 bytes)
-    // This can handle 13.5 hours of 44.1 kHz samples, per batch.
-    //
-    // sampleEnd: Stop at this index number. Same as above. (4 bytes).
-    // Wish I was using a uint32 but JavaScript doesn't like those.
-    // 13.5 hours is pretty good though.
-    //
-    // samplePosition: If negative, delay. If positive or 0, number of samples
-    // after sampleStart for start of this batch. (4 bytes).
-    //
-    // Total: 8 + 4 + 4 + 4 = 20 Bytes per struct
-    
-    __kernel void clMixSamples(__global float2* f_particles,
-                             __global int3* i_particles,
-                             __global float2* output,
+    __kernel void clMixSamples(__global float* f_particles,
+                             __global int* i_particles,
+                             __global float* output,
                              __global float* soundCues,
                              float2 obsLocation,
                              float2 obsDirection,
                              int numParticles,
                              int numCues)
   {
-      //output is float2 because it's stereo.
-      //numOutput is the number of samples in ONE channel of the resulting
-      //stream. Thus, because this is stereo, mentally double.
-
       int i = get_global_id(0); //Sample number
       int itr = 0;
       int numOutput = get_global_size(0);
@@ -92,54 +77,45 @@
           return;
       }
 
-      float2 OutputValue = (float2)(0.0f, 0.0f);
-      float2 obsRight = (float2)(-obsDirection.y, obsDirection.x);
-      //It's normalized in boid.js, but what's one op among friends?
-      obsRight = normalize(obsRight);
+      int isLeftEar = select(-1, 1, i > (numOutput / 2));
+      float SumOutput = 0.0f;
+      float2 EarDirection = isLeftEar * (float2)(-obsDirection.y, obsDirection.x);
       float2 CurrentDirection = (float2)(0.0f, 0.0f);
-      int CurrentPosition = 0;
+      int CurrentSamplePosition = 0;
       float CurrentSample = 0.0f;
+      float2 CurrentLocation = (float2)(0.0f, 0.0f);
       float SourceDistance = 0.0f;
-      float CurrentGain = 0.0f;
-      float CurrentLeft = 0.0f;
-      float CurrentRight = 0.0f;
+      float CurrentDistanceGain = 0.0f;
+      float CurrentBalance = 0.0f;
       
       for (itr = 0; itr < numParticles; itr++)
       {
-          CurrentPosition = i_particles[itr].z + i;
+          CurrentSamplePosition = i_particles[itr + (2 * numParticles)] + i;
           
-          if ((CurrentPosition >= i_particles[itr].x) &&
-              (CurrentPosition < i_particles[itr].y))
+          if ((CurrentSamplePosition >= i_particles[itr]) &&
+              (CurrentSamplePosition < i_particles[itr + numParticles]))
           {
-              CurrentSample = _soundCues[CurrentPosition] * 100.f;
+              CurrentSample = _soundCues[CurrentSamplePosition];
           
-              SourceDistance = distance(obsLocation, f_particles[itr]);
-              SourceDistance = clamp(SourceDistance, 50.f, 1000.f);
-              CurrentGain = 50.f / SourceDistance;
+              CurrentLocation = (float2)(f_particles[itr], f_particles[itr + numParticles]);
+              SourceDistance = distance(obsLocation, CurrentLocation);
+              SourceDistance = clamp(SourceDistance, 200.f, 1000.f);
+              CurrentDistanceGain = 200.f / SourceDistance;
 
-              CurrentDirection = f_particles[itr] - obsLocation;
+              CurrentDirection = CurrentLocation - obsLocation;
               CurrentDirection = normalize(CurrentDirection);
 
-              CurrentLeft = dot(CurrentDirection, -obsRight);
-              CurrentLeft += 1.0f;
-              CurrentLeft *= 0.5f;
-              CurrentLeft *= CurrentSample;
-              CurrentLeft *= CurrentGain;
-
-              CurrentRight = dot(CurrentDirection, obsRight);
-              CurrentRight += 1.0f;
-              CurrentRight *= 0.5f;
-              CurrentRight *= CurrentSample;
-              CurrentRight *= CurrentGain;
-
-              OutputValue.x += CurrentLeft;
-              OutputValue.y += CurrentRight;
+              CurrentBalance = dot(CurrentDirection, EarDirection);
+              CurrentBalance += 1.0f;
+              CurrentBalance *= 0.5f;
+              CurrentBalance *= CurrentSample;
+              CurrentBalance *= CurrentDistanceGain;
+              
+              SumOutput += CurrentBalance;
           }
       }
       
-      //output[i] = (float2)(0.01f, 0.01f);
-      //output[i] = (float2)(CurrentLeft, CurrentRight);
-      output[i] = OutputValue;
+      output[i] = SumOutput;
   }
   </script>
 </head>

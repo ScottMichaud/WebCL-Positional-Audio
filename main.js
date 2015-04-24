@@ -32,6 +32,7 @@ app.init = function () {
   
   app.elMap = document.getElementById('main'); //Container for various canvas layers.
   
+  app.elTinRoof = document.getElementById('tinRoof');
   app.elWebAudio = document.getElementById('typeWebAudio');
   app.elWebCL = document.getElementById('typeWebCL');
   app.elDeviceSelector = document.getElementById('webclDeviceSelector');
@@ -102,9 +103,20 @@ app.load = function () {
   app.elWebAudio.setAttribute('checked', 'checked');
   
   sampleLoader = new window.AudioSampleLoader();
-  sampleLoader.src = 'assets/Water-Dirt-01.ogg';
+  sampleLoader.src = ['assets/Water-Dirt-01.ogg', 'assets/Water-Metal-01.ogg'];
   sampleLoader.onload = function () {
-    app.rain.samples = sampleLoader.response;
+    var i;
+    
+    app.rain.source = sampleLoader.response;
+    app.rain.samples = new window.Float32Array(app.rain.source[0].length +
+                                               app.rain.source[1].length);
+    for (i = 0; i < app.rain.samples.length; i += 1) {
+      if (i < app.rain.source[0].length) {
+        app.rain.samples[i] = app.rain.source[0].getChannelData(0)[i];
+      } else {
+        app.rain.samples[i] = app.rain.source[1].getChannelData(0)[i - app.rain.source[0].length];
+      }
+    }
     app.pingReady();
   };
   sampleLoader.send();
@@ -356,7 +368,8 @@ app.generateInitialParticles = function (number) {
   app.rain.webclFloatView = new window.Float32Array(app.rain.webclCallsFloat);
   app.rain.webclIntView = new window.Int32Array(app.rain.webclCallsInt);
   
-  cueSamples = app.rain.samples.length;
+  cueSamples = [app.rain.source[0].length];
+  cueSamples.push([app.rain.source[1].length]);
   
   for (i = 0; i < 3 * app.rain.max; i += 1) {
     app.rain.webAudioView[i] = Math.random();
@@ -379,7 +392,9 @@ app.webAudioSimulateRain = function (timestamp) {
     deltaTime,
     audioTime,
     srcNode,
-    pannerNode;
+    pannerNode,
+    particleX,
+    particleY;
   
   audioTime = app.audio.currentTime;
   app.audio.listener.setPosition((app.boid.location.x / app.elBoid.width) * app.webclDistanceScale,
@@ -401,7 +416,18 @@ app.webAudioSimulateRain = function (timestamp) {
       app.rain.webAudioView[i + 2] = 1;
       
       srcNode = app.audio.createBufferSource();
-      srcNode.buffer = app.rain.samples;
+      
+      particleX = app.rain.webAudioView[i] * app.elMap.offsetWidth;
+      particleY = app.rain.webAudioView[i + 1] * app.elMap.offsetHeight;
+      //If it's within the tin roof element.
+      if (particleX >= app.elTinRoof.offsetLeft &&
+          particleX <= app.elTinRoof.offsetLeft + app.elTinRoof.offsetWidth &&
+          particleY >= app.elTinRoof.offsetTop &&
+          particleY <= app.elTinRoof.offsetTop + app.elTinRoof.offsetHeight) {
+        srcNode.buffer = app.rain.source[1];
+      } else {
+        srcNode.buffer = app.rain.source[0];
+      }
       pannerNode = app.audio.createPanner();
       pannerNode.panningModel = 'equalpower';
       pannerNode.distanceModel = 'inverse';
@@ -422,19 +448,42 @@ app.webclSimulateRainAudio = function (e) {
     response,
     outputFullBuffer,
     outputLeft,
-    outputRight;
+    outputRight,
+    particleX,
+    particleY;
   
   for (i = 0; i < app.rain.max; i += 1) {
     //If "life" has been reset: start a new sound.
     //Else: Keep simulating current one.
     
     if (app.rain.webAudioView[3 * i + 2] === 1) {
+      //FIXME: THESE COORDINATES ARE WRONG
       app.rain.webclFloatView[i] = app.rain.webAudioView[3 * i] * app.webclDistanceScale;
       app.rain.webclFloatView[i + app.rain.max] = app.rain.webAudioView[3 * i + 1] * app.webclDistanceScale;
       
+      //FIXME: I think the problem was here... had not [3 * i]
+      //Looks like it's fixed.
+      particleX = app.rain.webAudioView[3 * i] * app.elMap.offsetWidth;
+      particleY = app.rain.webAudioView[3 * i + 1] * app.elMap.offsetHeight;
+      //If it's within the tin roof element.
+      if (particleX >= app.elTinRoof.offsetLeft &&
+          particleX <= app.elTinRoof.offsetLeft + app.elTinRoof.offsetWidth &&
+          particleY >= app.elTinRoof.offsetTop &&
+          particleY <= app.elTinRoof.offsetTop + app.elTinRoof.offsetHeight) {
+        //If collides with tin
+        app.rain.webclIntView[i] = app.rain.source[0].length;
+        app.rain.webclIntView[i + app.rain.max] = app.rain.source[0].length + app.rain.source[1].length;
+        //console.log("Source: " + particleX + ", " + particleY);
+        //console.log("Sound: " + app.rain.webclFloatView[i] + ", " + app.rain.webclFloatView[i + app.rain.max]);
+        //console.log("Listener: " + app.boid.location.x + ", " + app.boid.location.y);
+        //console.log("Listener: " + (app.boid.location.x / app.elMap.clientWidth) * app.webclDistanceScale + ", " + (app.boid.location.y / app.elMap.clientHeight) * app.webclDistanceScale);
+      } else {
+        //If collides with dirt
+        app.rain.webclIntView[i] = 0;
+        app.rain.webclIntView[i + app.rain.max] = app.rain.source[0].length;
+      }
       //Set the current sample to the start.
       app.rain.webclIntView[i + (2 * app.rain.max)] = app.rain.webclIntView[i];
-      //TODO: Adjust sampleStart and sampleEnd for new sound cue, if multiple.
       app.rain.webAudioView[3 * i + 2] = 0.99;
       
     } else {
@@ -503,7 +552,7 @@ app.setupKernel = function () {
   app.bufParticlesFloat = cl.createBuffer(window.WebCL.MEM_READ_ONLY, app.rain.webclCallsFloat.byteLength);
   app.bufParticlesInt = cl.createBuffer(window.WebCL.MEM_READ_ONLY, app.rain.webclCallsInt.byteLength);
   app.bufOutput = cl.createBuffer(window.WebCL.MEM_WRITE_ONLY, 8 * app.rain.timestep);
-  app.bufSoundCues = cl.createBuffer(window.WebCL.MEM_READ_ONLY, app.rain.samples.getChannelData(0).byteLength);
+  app.bufSoundCues = cl.createBuffer(window.WebCL.MEM_READ_ONLY, app.rain.samples.byteLength);
   app.clProgram = cl.createProgram(app.kernelSrc);
   app.device = cl.getInfo(window.WebCL.CONTEXT_DEVICES)[0];
   //app.clProgram.build([app.device], "-cl-fast-relaxed-math");
@@ -515,9 +564,9 @@ app.setupKernel = function () {
   app.kernel.setArg(3, app.bufSoundCues);
   app.kernel.setArg(6, new window.Int32Array([app.rain.max]));
   //Each sound sample is 4 bytes.
-  app.kernel.setArg(7, new window.Int32Array([app.rain.samples.getChannelData(0).byteLength / 4]));
+  app.kernel.setArg(7, new window.Int32Array([app.rain.samples.byteLength / 4]));
   app.cmdQueue = app.clGetter.clCtx.createCommandQueue(app.device);
-  app.cmdQueue.enqueueWriteBuffer(app.bufSoundCues, false, 0, app.rain.samples.getChannelData(0).byteLength, app.rain.samples.getChannelData(0));
+  app.cmdQueue.enqueueWriteBuffer(app.bufSoundCues, false, 0, app.rain.samples.byteLength, app.rain.samples);
   app.output = new window.Float32Array(app.rain.timestep * 2);
 };
 
